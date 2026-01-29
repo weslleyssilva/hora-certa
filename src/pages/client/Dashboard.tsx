@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { MetricCard } from "@/components/ui/metric-card";
@@ -8,10 +9,12 @@ import { StatusBadge } from "@/components/ui/status-badge";
 import { PageLoader } from "@/components/ui/loading-spinner";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Progress } from "@/components/ui/progress";
-import { LayoutDashboard, Clock, FileText, Ticket, Package, AlertTriangle } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { LayoutDashboard, Clock, FileText, Ticket, Package, AlertTriangle, Plus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { formatDate, formatHours, truncate, calculatePercentage, isContractActive } from "@/lib/utils";
+import { TICKET_STATUS, TICKET_STATUS_LABELS, TICKET_STATUS_VARIANTS } from "@/lib/constants";
 
 interface Contract {
   id: string;
@@ -22,10 +25,12 @@ interface Contract {
 
 interface TicketSummary {
   id: string;
+  title: string | null;
   service_date: string;
   requester_name: string;
   billed_hours: number;
   description: string;
+  status: string;
 }
 
 interface ProductSummary {
@@ -34,12 +39,22 @@ interface ProductSummary {
   quantity: number;
 }
 
+interface OpenTicket {
+  id: string;
+  title: string | null;
+  description: string;
+  status: string;
+  created_at: string;
+}
+
 export default function ClientDashboard() {
   const { profile } = useAuth();
+  const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(true);
   const [activeContract, setActiveContract] = useState<Contract | null>(null);
   const [consumedHours, setConsumedHours] = useState(0);
   const [recentTickets, setRecentTickets] = useState<TicketSummary[]>([]);
+  const [openTickets, setOpenTickets] = useState<OpenTicket[]>([]);
   const [currentProducts, setCurrentProducts] = useState<ProductSummary[]>([]);
   const [clientName, setClientName] = useState("");
 
@@ -89,15 +104,27 @@ export default function ClientDashboard() {
         setConsumedHours(total);
       }
 
-      // Últimos 5 atendimentos
+      // Últimos 5 atendimentos concluídos
       const { data: ticketsData } = await supabase
         .from("tickets")
-        .select("id, service_date, requester_name, billed_hours, description")
+        .select("id, title, service_date, requester_name, billed_hours, description, status")
         .eq("client_id", profile.client_id)
+        .eq("status", "completed")
         .order("service_date", { ascending: false })
         .limit(5);
 
       setRecentTickets(ticketsData || []);
+
+      // Chamados abertos/em andamento
+      const { data: openTicketsData } = await supabase
+        .from("tickets")
+        .select("id, title, description, status, created_at")
+        .eq("client_id", profile.client_id)
+        .in("status", ["open", "in_progress"])
+        .order("created_at", { ascending: false })
+        .limit(5);
+
+      setOpenTickets(openTicketsData || []);
 
       // Produtos do mês atual
       const currentMonth = new Date().toISOString().slice(0, 7);
@@ -189,6 +216,54 @@ export default function ClientDashboard() {
         </Card>
       )}
 
+      {/* Chamados Abertos */}
+      {openTickets.length > 0 && (
+        <Card className="mb-8 border-warning/50">
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="flex items-center gap-2">
+                  <Ticket className="h-5 w-5 text-warning" />
+                  Chamados em Aberto
+                </CardTitle>
+                <CardDescription>Acompanhe seus chamados pendentes</CardDescription>
+              </div>
+              <Button onClick={() => navigate("/tickets")} variant="outline" size="sm">
+                Ver Todos
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Título</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Descrição</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {openTickets.map((ticket) => (
+                  <TableRow key={ticket.id}>
+                    <TableCell className="font-medium">
+                      {ticket.title || "-"}
+                    </TableCell>
+                    <TableCell>
+                      <StatusBadge variant={TICKET_STATUS_VARIANTS[ticket.status]}>
+                        {TICKET_STATUS_LABELS[ticket.status]}
+                      </StatusBadge>
+                    </TableCell>
+                    <TableCell className="max-w-[300px]">
+                      {truncate(ticket.description, 60)}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      )}
+
       <div className="grid gap-6 lg:grid-cols-2">
         {/* Últimos Atendimentos */}
         <Card>
@@ -197,7 +272,7 @@ export default function ClientDashboard() {
               <Ticket className="h-5 w-5" />
               Últimos Atendimentos
             </CardTitle>
-            <CardDescription>5 atendimentos mais recentes</CardDescription>
+            <CardDescription>5 atendimentos concluídos mais recentes</CardDescription>
           </CardHeader>
           <CardContent>
             {recentTickets.length > 0 ? (
@@ -205,7 +280,6 @@ export default function ClientDashboard() {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Data</TableHead>
-                    <TableHead>Solicitante</TableHead>
                     <TableHead>Horas</TableHead>
                     <TableHead>Descrição</TableHead>
                   </TableRow>
@@ -216,7 +290,6 @@ export default function ClientDashboard() {
                       <TableCell className="font-medium">
                         {formatDate(ticket.service_date)}
                       </TableCell>
-                      <TableCell>{ticket.requester_name}</TableCell>
                       <TableCell>{formatHours(ticket.billed_hours)}</TableCell>
                       <TableCell className="max-w-[200px]">
                         {truncate(ticket.description, 50)}
@@ -228,7 +301,7 @@ export default function ClientDashboard() {
             ) : (
               <EmptyState
                 title="Nenhum atendimento"
-                description="Ainda não há atendimentos registrados."
+                description="Ainda não há atendimentos concluídos."
               />
             )}
           </CardContent>

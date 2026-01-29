@@ -168,6 +168,8 @@ export type Database = {
           requester_name: string
           service_date: string
           start_time: string | null
+          status: Database["public"]["Enums"]["ticket_status"]
+          title: string | null
           updated_at: string
         }
         Insert: {
@@ -182,6 +184,8 @@ export type Database = {
           requester_name: string
           service_date: string
           start_time?: string | null
+          status?: Database["public"]["Enums"]["ticket_status"]
+          title?: string | null
           updated_at?: string
         }
         Update: {
@@ -196,6 +200,8 @@ export type Database = {
           requester_name?: string
           service_date?: string
           start_time?: string | null
+          status?: Database["public"]["Enums"]["ticket_status"]
+          title?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -242,6 +248,7 @@ export type Database = {
     }
     Enums: {
       app_role: "ADMIN" | "CLIENT_USER"
+      ticket_status: "open" | "in_progress" | "completed"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -370,6 +377,7 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["ADMIN", "CLIENT_USER"],
+      ticket_status: ["open", "in_progress", "completed"],
     },
   },
 } as const
