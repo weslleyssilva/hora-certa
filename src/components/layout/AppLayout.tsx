@@ -41,7 +41,7 @@ const adminMenuItems = [
 
 const clientMenuItems = [
   { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
-  { title: "Atendimentos", url: "/tickets", icon: Ticket },
+  { title: "Chamados", url: "/tickets", icon: Ticket },
   { title: "Produtos", url: "/products", icon: Package },
 ];
 

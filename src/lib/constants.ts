@@ -23,6 +23,25 @@ export const CLIENT_STATUS = {
   INACTIVE: "inactive",
 } as const;
 
+// Status de ticket
+export const TICKET_STATUS = {
+  OPEN: "open",
+  IN_PROGRESS: "in_progress",
+  COMPLETED: "completed",
+} as const;
+
+export const TICKET_STATUS_LABELS: Record<string, string> = {
+  open: "Aberto",
+  in_progress: "Em Atendimento",
+  completed: "Concluído",
+};
+
+export const TICKET_STATUS_VARIANTS: Record<string, "default" | "warning" | "success" | "destructive" | "secondary"> = {
+  open: "warning",
+  in_progress: "secondary",
+  completed: "success",
+};
+
 // Roles
 export const USER_ROLES = {
   ADMIN: "ADMIN",
@@ -31,3 +50,4 @@ export const USER_ROLES = {
 
 export type AppRole = typeof USER_ROLES[keyof typeof USER_ROLES];
 export type ClientStatus = typeof CLIENT_STATUS[keyof typeof CLIENT_STATUS];
+export type TicketStatus = typeof TICKET_STATUS[keyof typeof TICKET_STATUS];
