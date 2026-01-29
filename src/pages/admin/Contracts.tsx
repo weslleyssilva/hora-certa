@@ -274,12 +274,15 @@ export default function AdminContracts() {
         <CardContent className="pt-6">
           <div className="max-w-xs">
             <Label>Filtrar por Cliente</Label>
-            <Select value={filterClient} onValueChange={setFilterClient}>
+            <Select
+              value={filterClient || "all"}
+              onValueChange={(value) => setFilterClient(value === "all" ? "" : value)}
+            >
               <SelectTrigger>
                 <SelectValue placeholder="Todos os clientes" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Todos os clientes</SelectItem>
+                <SelectItem value="all">Todos os clientes</SelectItem>
                 {clients.map((client) => (
                   <SelectItem key={client.id} value={client.id}>
                     {client.name}
