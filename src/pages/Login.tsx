@@ -27,7 +27,6 @@ export default function Login() {
     e.preventDefault();
     setError(null);
 
-    // Validar inputs
     const result = loginSchema.safeParse({ email, password });
     if (!result.success) {
       setError(result.error.errors[0].message);
@@ -52,29 +51,29 @@ export default function Login() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-primary/5 via-background to-secondary/5 p-4">
-      <Card className="w-full max-w-md shadow-elevated animate-fade-in">
-        <CardHeader className="space-y-4 text-center">
-          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-xl gradient-primary shadow-soft">
-            <Clock className="h-7 w-7 text-primary-foreground" />
+    <div className="flex min-h-screen items-center justify-center bg-background p-4">
+      <Card className="w-full max-w-sm border-border/50 shadow-sm">
+        <CardHeader className="space-y-4 text-center pb-2">
+          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-lg bg-primary">
+            <Clock className="h-6 w-6 text-primary-foreground" />
           </div>
           <div>
-            <CardTitle className="text-2xl font-bold">{APP_NAME}</CardTitle>
-            <CardDescription className="mt-1">
-              Sistema de Controle de Horas de TI
+            <CardTitle className="text-xl font-semibold">{APP_NAME}</CardTitle>
+            <CardDescription className="mt-1 text-sm">
+              Sistema de Controle de Horas
             </CardDescription>
           </div>
         </CardHeader>
         <form onSubmit={handleSubmit}>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-4 pt-4">
             {error && (
-              <Alert variant="destructive" className="animate-scale-in">
+              <Alert variant="destructive" className="py-2">
                 <AlertCircle className="h-4 w-4" />
-                <AlertDescription>{error}</AlertDescription>
+                <AlertDescription className="ml-2 text-sm">{error}</AlertDescription>
               </Alert>
             )}
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="email" className="text-sm">Email</Label>
               <Input
                 id="email"
                 type="email"
@@ -83,11 +82,11 @@ export default function Login() {
                 onChange={(e) => setEmail(e.target.value)}
                 required
                 autoComplete="email"
-                className="h-11"
+                className="h-10"
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="password">Senha</Label>
+              <Label htmlFor="password" className="text-sm">Senha</Label>
               <Input
                 id="password"
                 type="password"
@@ -96,14 +95,14 @@ export default function Login() {
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 autoComplete="current-password"
-                className="h-11"
+                className="h-10"
               />
             </div>
           </CardContent>
-          <CardFooter className="flex flex-col gap-4">
+          <CardFooter className="flex flex-col gap-4 pt-2">
             <Button
               type="submit"
-              className="w-full h-11 gradient-primary"
+              className="w-full h-10"
               disabled={isLoading}
             >
               {isLoading ? (

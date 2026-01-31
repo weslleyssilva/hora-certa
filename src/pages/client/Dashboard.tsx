@@ -1,20 +1,26 @@
-import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useEffect, useState, useMemo } from "react";
+import { format, parseISO, startOfMonth, endOfMonth } from "date-fns";
+import { ptBR } from "date-fns/locale";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { PageHeader } from "@/components/layout/PageHeader";
-import { MetricCard } from "@/components/ui/metric-card";
+import { KPICard } from "@/components/ui/kpi-card";
+import { ProgressBar } from "@/components/ui/progress-bar";
+import { AreaChart } from "@/components/charts/AreaChart";
+import { BarChart } from "@/components/charts/BarChart";
+import { HorizontalBarChart } from "@/components/charts/HorizontalBarChart";
+import { PeriodFilter, Period } from "@/components/filters/PeriodFilter";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { StatusBadge } from "@/components/ui/status-badge";
-import { PageLoader } from "@/components/ui/loading-spinner";
+import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/ui/empty-state";
-import { Progress } from "@/components/ui/progress";
+import { StatusBadge } from "@/components/ui/status-badge";
 import { Button } from "@/components/ui/button";
-import { LayoutDashboard, Clock, FileText, Ticket, Package, AlertTriangle, Plus } from "lucide-react";
+import { Clock, FileText, TrendingUp, Users, Ticket, AlertTriangle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { formatDate, formatHours, truncate, calculatePercentage, isContractActive } from "@/lib/utils";
-import { TICKET_STATUS, TICKET_STATUS_LABELS, TICKET_STATUS_VARIANTS } from "@/lib/constants";
+import { formatDate, truncate } from "@/lib/utils";
+import { useNavigate } from "react-router-dom";
+import { TICKET_STATUS_LABELS, TICKET_STATUS_VARIANTS } from "@/lib/constants";
 
 interface Contract {
   id: string;
@@ -23,52 +29,71 @@ interface Contract {
   contracted_hours: number;
 }
 
-interface TicketSummary {
+interface TicketData {
   id: string;
-  title: string | null;
   service_date: string;
   requester_name: string;
-  billed_hours: number;
   description: string;
+  billed_hours: number;
   status: string;
+  title: string | null;
+  created_at: string;
 }
 
-interface ProductSummary {
-  id: string;
+interface Product {
   product_name: string;
   quantity: number;
 }
 
-interface OpenTicket {
-  id: string;
-  title: string | null;
-  description: string;
-  status: string;
-  created_at: string;
+interface DataPoint {
+  name: string;
+  value: number;
 }
 
 export default function ClientDashboard() {
   const { profile } = useAuth();
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(true);
-  const [activeContract, setActiveContract] = useState<Contract | null>(null);
-  const [consumedHours, setConsumedHours] = useState(0);
-  const [recentTickets, setRecentTickets] = useState<TicketSummary[]>([]);
-  const [openTickets, setOpenTickets] = useState<OpenTicket[]>([]);
-  const [currentProducts, setCurrentProducts] = useState<ProductSummary[]>([]);
+  const [contract, setContract] = useState<Contract | null>(null);
   const [clientName, setClientName] = useState("");
+  const [period, setPeriod] = useState<Period>(() => {
+    const now = new Date();
+    return { startDate: startOfMonth(now), endDate: endOfMonth(now) };
+  });
+
+  // Data states
+  const [consumedHours, setConsumedHours] = useState(0);
+  const [ticketCount, setTicketCount] = useState(0);
+  const [consumptionByDay, setConsumptionByDay] = useState<DataPoint[]>([]);
+  const [ticketsByDay, setTicketsByDay] = useState<DataPoint[]>([]);
+  const [topRequesters, setTopRequesters] = useState<DataPoint[]>([]);
+  const [recentTickets, setRecentTickets] = useState<TicketData[]>([]);
+  const [openTickets, setOpenTickets] = useState<TicketData[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
+
+  const contractPeriod = useMemo(() => {
+    if (!contract) return undefined;
+    return {
+      startDate: parseISO(contract.start_date),
+      endDate: parseISO(contract.end_date),
+    };
+  }, [contract]);
+
+  useEffect(() => {
+    loadInitialData();
+  }, [profile?.client_id]);
 
   useEffect(() => {
     if (profile?.client_id) {
       loadDashboardData();
     }
-  }, [profile?.client_id]);
+  }, [profile?.client_id, period]);
 
-  const loadDashboardData = async () => {
+  const loadInitialData = async () => {
     if (!profile?.client_id) return;
 
     try {
-      // Carregar dados do cliente
+      // Load client name
       const { data: client } = await supabase
         .from("clients")
         .select("name")
@@ -77,273 +102,345 @@ export default function ClientDashboard() {
 
       if (client) setClientName(client.name);
 
-      // Buscar contrato ativo
+      // Load active contract
       const today = new Date().toISOString().split("T")[0];
       const { data: contracts } = await supabase
         .from("contracts")
-        .select("*")
+        .select("id, start_date, end_date, contracted_hours")
         .eq("client_id", profile.client_id)
         .lte("start_date", today)
         .gte("end_date", today)
         .order("start_date", { ascending: false })
         .limit(1);
 
-      const contract = contracts?.[0] || null;
-      setActiveContract(contract);
-
-      // Calcular horas consumidas no período do contrato
-      if (contract) {
-        const { data: tickets } = await supabase
-          .from("tickets")
-          .select("billed_hours")
-          .eq("client_id", profile.client_id)
-          .gte("service_date", contract.start_date)
-          .lte("service_date", contract.end_date);
-
-        const total = tickets?.reduce((sum, t) => sum + t.billed_hours, 0) || 0;
-        setConsumedHours(total);
+      const activeContract = contracts?.[0] || null;
+      if (activeContract) {
+        setContract(activeContract);
+        setPeriod({
+          startDate: parseISO(activeContract.start_date),
+          endDate: parseISO(activeContract.end_date),
+        });
       }
 
-      // Últimos 5 atendimentos concluídos
-      const { data: ticketsData } = await supabase
-        .from("tickets")
-        .select("id, title, service_date, requester_name, billed_hours, description, status")
-        .eq("client_id", profile.client_id)
-        .eq("status", "completed")
-        .order("service_date", { ascending: false })
-        .limit(5);
-
-      setRecentTickets(ticketsData || []);
-
-      // Chamados abertos/em andamento
+      // Load open tickets
       const { data: openTicketsData } = await supabase
         .from("tickets")
-        .select("id, title, description, status, created_at")
+        .select("id, title, description, status, created_at, service_date, requester_name, billed_hours")
         .eq("client_id", profile.client_id)
         .in("status", ["open", "in_progress"])
         .order("created_at", { ascending: false })
         .limit(5);
 
       setOpenTickets(openTicketsData || []);
+    } catch (error) {
+      console.error("Error loading initial data:", error);
+    }
+  };
 
-      // Produtos do mês atual
-      const currentMonth = new Date().toISOString().slice(0, 7);
+  const loadDashboardData = async () => {
+    if (!profile?.client_id) return;
+    setIsLoading(true);
+
+    try {
+      const startStr = format(period.startDate, "yyyy-MM-dd");
+      const endStr = format(period.endDate, "yyyy-MM-dd");
+
+      const { data: tickets } = await supabase
+        .from("tickets")
+        .select("id, service_date, requester_name, description, billed_hours, status, title, created_at")
+        .eq("client_id", profile.client_id)
+        .gte("service_date", startStr)
+        .lte("service_date", endStr)
+        .order("service_date", { ascending: false });
+
+      if (tickets) {
+        const totalHours = tickets.reduce((sum, t) => sum + t.billed_hours, 0);
+        setConsumedHours(totalHours);
+        setTicketCount(tickets.length);
+        setRecentTickets(tickets.slice(0, 10));
+
+        const byDay: Record<string, { hours: number; count: number }> = {};
+        tickets.forEach((t) => {
+          if (!byDay[t.service_date]) {
+            byDay[t.service_date] = { hours: 0, count: 0 };
+          }
+          byDay[t.service_date].hours += t.billed_hours;
+          byDay[t.service_date].count += 1;
+        });
+
+        const sortedDays = Object.keys(byDay).sort();
+        setConsumptionByDay(
+          sortedDays.map((d) => ({
+            name: format(parseISO(d), "dd/MM", { locale: ptBR }),
+            value: byDay[d].hours,
+          }))
+        );
+        setTicketsByDay(
+          sortedDays.map((d) => ({
+            name: format(parseISO(d), "dd/MM", { locale: ptBR }),
+            value: byDay[d].count,
+          }))
+        );
+
+        const byRequester: Record<string, number> = {};
+        tickets.forEach((t) => {
+          byRequester[t.requester_name] =
+            (byRequester[t.requester_name] || 0) + t.billed_hours;
+        });
+        setTopRequesters(
+          Object.entries(byRequester)
+            .map(([name, value]) => ({ name, value }))
+            .sort((a, b) => b.value - a.value)
+            .slice(0, 5)
+        );
+      }
+
+      const currentMonth = format(new Date(), "yyyy-MM");
       const { data: productsData } = await supabase
         .from("products_used")
-        .select("id, product_name, quantity")
+        .select("product_name, quantity")
         .eq("client_id", profile.client_id)
-        .eq("competence_month", currentMonth)
-        .limit(5);
+        .eq("competence_month", currentMonth);
 
-      setCurrentProducts(productsData || []);
+      if (productsData) {
+        setProducts(productsData);
+      }
     } catch (error) {
-      console.error("Error loading dashboard:", error);
+      console.error("Error loading dashboard data:", error);
     } finally {
       setIsLoading(false);
     }
   };
 
-  if (isLoading) return <AppLayout><PageLoader /></AppLayout>;
+  const saldoHoras = contract ? contract.contracted_hours - consumedHours : 0;
 
-  const remainingHours = activeContract ? activeContract.contracted_hours - consumedHours : 0;
-  const usagePercentage = activeContract
-    ? calculatePercentage(consumedHours, activeContract.contracted_hours)
-    : 0;
+  if (isLoading && !contract && !clientName) {
+    return (
+      <AppLayout>
+        <div className="space-y-6">
+          <Skeleton className="h-8 w-48" />
+          <div className="grid gap-4 md:grid-cols-4">
+            {[1, 2, 3, 4].map((i) => (
+              <Skeleton key={i} className="h-28" />
+            ))}
+          </div>
+        </div>
+      </AppLayout>
+    );
+  }
 
   return (
     <AppLayout>
-      <PageHeader
-        title="Dashboard"
-        description={`Bem-vindo, ${clientName}`}
-        icon={LayoutDashboard}
-      />
+      <div className="space-y-6">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <PageHeader
+            title="Dashboard"
+            description={clientName ? `Bem-vindo, ${clientName}` : "Carregando..."}
+            className="mb-0"
+          />
+          <PeriodFilter
+            value={period}
+            onChange={setPeriod}
+            contractPeriod={contractPeriod}
+            showContractOption={!!contract}
+          />
+        </div>
 
-      {/* Contrato Ativo */}
-      {activeContract ? (
-        <div className="grid gap-6 md:grid-cols-4 mb-8">
-          <MetricCard
-            title="Contrato Vigente"
-            value={`${formatDate(activeContract.start_date)} - ${formatDate(activeContract.end_date)}`}
+        {/* No contract warning */}
+        {!contract && (
+          <Card className="border-warning/50 bg-warning/5">
+            <CardContent className="flex items-center gap-4 py-6">
+              <AlertTriangle className="h-8 w-8 text-warning" />
+              <div>
+                <h3 className="font-semibold">Sem contrato ativo</h3>
+                <p className="text-sm text-muted-foreground">
+                  Não há contrato vigente no momento. Entre em contato com o suporte.
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* KPIs */}
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <KPICard
+            title="Horas Contratadas"
+            value={contract ? `${contract.contracted_hours}h` : "N/A"}
             icon={FileText}
             variant="primary"
           />
-          <MetricCard
-            title="Horas Contratadas"
-            value={formatHours(activeContract.contracted_hours)}
-            icon={Clock}
-          />
-          <MetricCard
+          <KPICard
             title="Horas Consumidas"
-            value={formatHours(consumedHours)}
-            subtitle={`${usagePercentage}% utilizado`}
-            icon={Ticket}
-            variant={usagePercentage > 90 ? "warning" : "default"}
-          />
-          <MetricCard
-            title="Saldo Disponível"
-            value={formatHours(remainingHours)}
+            value={`${consumedHours}h`}
             icon={Clock}
-            variant={remainingHours <= 0 ? "destructive" : "success"}
+          />
+          <KPICard
+            title="Saldo Disponível"
+            value={`${saldoHoras}h`}
+            icon={TrendingUp}
+            variant={saldoHoras < 0 ? "destructive" : saldoHoras < 5 ? "warning" : "success"}
+          />
+          <KPICard
+            title="Atendimentos"
+            value={ticketCount}
+            icon={Users}
           />
         </div>
-      ) : (
-        <Card className="mb-8 border-warning/50 bg-warning/5">
-          <CardContent className="flex items-center gap-4 py-6">
-            <AlertTriangle className="h-8 w-8 text-warning" />
-            <div>
-              <h3 className="font-semibold">Sem contrato ativo</h3>
-              <p className="text-sm text-muted-foreground">
-                Não há contrato vigente no momento. Entre em contato com o suporte.
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-      )}
 
-      {/* Barra de Progresso */}
-      {activeContract && (
-        <Card className="mb-8">
-          <CardHeader>
-            <CardTitle className="text-base">Consumo do Contrato</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Progress value={usagePercentage} className="h-3" />
-            <div className="mt-2 flex justify-between text-sm text-muted-foreground">
-              <span>{formatHours(consumedHours)} consumidas</span>
-              <span>{formatHours(activeContract.contracted_hours)} total</span>
-            </div>
-          </CardContent>
-        </Card>
-      )}
+        {/* Progress bar */}
+        {contract && (
+          <Card className="border-border/50">
+            <CardContent className="pt-6">
+              <ProgressBar
+                value={consumedHours}
+                max={contract.contracted_hours}
+                label="Consumo do Contrato"
+              />
+            </CardContent>
+          </Card>
+        )}
 
-      {/* Chamados Abertos */}
-      {openTickets.length > 0 && (
-        <Card className="mb-8 border-warning/50">
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle className="flex items-center gap-2">
-                  <Ticket className="h-5 w-5 text-warning" />
-                  Chamados em Aberto
-                </CardTitle>
-                <CardDescription>Acompanhe seus chamados pendentes</CardDescription>
+        {/* Open tickets */}
+        {openTickets.length > 0 && (
+          <Card className="border-warning/30">
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="flex items-center gap-2 text-base font-medium">
+                    <Ticket className="h-4 w-4 text-warning" />
+                    Chamados em Aberto
+                  </CardTitle>
+                  <CardDescription className="text-sm">Acompanhe seus chamados pendentes</CardDescription>
+                </div>
+                <Button onClick={() => navigate("/tickets")} variant="outline" size="sm">
+                  Ver Todos
+                </Button>
               </div>
-              <Button onClick={() => navigate("/tickets")} variant="outline" size="sm">
-                Ver Todos
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Título</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Descrição</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {openTickets.map((ticket) => (
-                  <TableRow key={ticket.id}>
-                    <TableCell className="font-medium">
-                      {ticket.title || "-"}
-                    </TableCell>
-                    <TableCell>
-                      <StatusBadge variant={TICKET_STATUS_VARIANTS[ticket.status]}>
-                        {TICKET_STATUS_LABELS[ticket.status]}
-                      </StatusBadge>
-                    </TableCell>
-                    <TableCell className="max-w-[300px]">
-                      {truncate(ticket.description, 60)}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
-      )}
-
-      <div className="grid gap-6 lg:grid-cols-2">
-        {/* Últimos Atendimentos */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Ticket className="h-5 w-5" />
-              Últimos Atendimentos
-            </CardTitle>
-            <CardDescription>5 atendimentos concluídos mais recentes</CardDescription>
-          </CardHeader>
-          <CardContent>
-            {recentTickets.length > 0 ? (
+            </CardHeader>
+            <CardContent className="pt-0">
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Data</TableHead>
-                    <TableHead>Horas</TableHead>
-                    <TableHead>Descrição</TableHead>
+                    <TableHead className="text-xs">Título</TableHead>
+                    <TableHead className="text-xs">Status</TableHead>
+                    <TableHead className="text-xs">Descrição</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {recentTickets.map((ticket) => (
+                  {openTickets.map((ticket) => (
                     <TableRow key={ticket.id}>
-                      <TableCell className="font-medium">
-                        {formatDate(ticket.service_date)}
+                      <TableCell className="text-sm font-medium">{ticket.title || "-"}</TableCell>
+                      <TableCell>
+                        <StatusBadge variant={TICKET_STATUS_VARIANTS[ticket.status]}>
+                          {TICKET_STATUS_LABELS[ticket.status]}
+                        </StatusBadge>
                       </TableCell>
-                      <TableCell>{formatHours(ticket.billed_hours)}</TableCell>
-                      <TableCell className="max-w-[200px]">
-                        {truncate(ticket.description, 50)}
-                      </TableCell>
+                      <TableCell className="text-sm max-w-[300px]">{truncate(ticket.description, 60)}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
               </Table>
-            ) : (
-              <EmptyState
-                title="Nenhum atendimento"
-                description="Ainda não há atendimentos concluídos."
-              />
-            )}
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        )}
 
-        {/* Produtos do Mês */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Package className="h-5 w-5" />
-              Produtos do Mês
-            </CardTitle>
-            <CardDescription>Produtos utilizados neste mês</CardDescription>
-          </CardHeader>
-          <CardContent>
-            {currentProducts.length > 0 ? (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Produto</TableHead>
-                    <TableHead className="text-right">Quantidade</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {currentProducts.map((product) => (
-                    <TableRow key={product.id}>
-                      <TableCell className="font-medium">
-                        {product.product_name}
-                      </TableCell>
-                      <TableCell className="text-right">{product.quantity}</TableCell>
+        {/* Charts Row */}
+        <div className="grid gap-6 lg:grid-cols-2">
+          <AreaChart
+            title="Horas Consumidas"
+            description="Evolução do consumo no período"
+            data={consumptionByDay}
+            formatValue={(v) => `${v}h`}
+            height={280}
+          />
+          <BarChart
+            title="Atendimentos por Dia"
+            description="Quantidade de atendimentos"
+            data={ticketsByDay}
+            color="hsl(var(--chart-2))"
+            height={280}
+          />
+        </div>
+
+        {/* Top Requesters */}
+        {topRequesters.length > 0 && (
+          <HorizontalBarChart
+            title="Top Solicitantes"
+            description="Maiores consumidores de horas no período"
+            data={topRequesters}
+            formatValue={(v) => `${v}h`}
+            height={240}
+          />
+        )}
+
+        {/* Tables */}
+        <div className="grid gap-6 lg:grid-cols-2">
+          {/* Recent Tickets */}
+          <Card className="border-border/50">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base font-medium">Últimos Atendimentos</CardTitle>
+            </CardHeader>
+            <CardContent className="pt-0">
+              {recentTickets.length > 0 ? (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="text-xs">Data</TableHead>
+                      <TableHead className="text-xs">Solicitante</TableHead>
+                      <TableHead className="text-xs text-right">Horas</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            ) : (
-              <EmptyState
-                title="Nenhum produto"
-                description="Não há produtos registrados para este mês."
-              />
-            )}
-          </CardContent>
-        </Card>
+                  </TableHeader>
+                  <TableBody>
+                    {recentTickets.slice(0, 5).map((ticket) => (
+                      <TableRow key={ticket.id}>
+                        <TableCell className="text-sm">{formatDate(ticket.service_date)}</TableCell>
+                        <TableCell className="text-sm">{truncate(ticket.requester_name, 20)}</TableCell>
+                        <TableCell className="text-sm text-right font-medium">{ticket.billed_hours}h</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              ) : (
+                <EmptyState
+                  title="Sem atendimentos"
+                  description="Não há atendimentos no período selecionado."
+                />
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Products */}
+          <Card className="border-border/50">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base font-medium">Produtos do Mês</CardTitle>
+            </CardHeader>
+            <CardContent className="pt-0">
+              {products.length > 0 ? (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="text-xs">Produto</TableHead>
+                      <TableHead className="text-xs text-right">Qtd</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {products.map((product, idx) => (
+                      <TableRow key={idx}>
+                        <TableCell className="text-sm">{product.product_name}</TableCell>
+                        <TableCell className="text-sm text-right font-medium">{product.quantity}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              ) : (
+                <EmptyState
+                  title="Sem produtos"
+                  description="Não há produtos registrados este mês."
+                />
+              )}
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </AppLayout>
   );

@@ -180,11 +180,10 @@ export default function AdminContracts() {
       <PageHeader
         title="Contratos"
         description="Gerenciar contratos de clientes"
-        icon={FileText}
       >
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
-            <Button onClick={openCreateDialog} className="gradient-primary">
+            <Button onClick={openCreateDialog}>
               <Plus className="mr-2 h-4 w-4" />
               Novo Contrato
             </Button>

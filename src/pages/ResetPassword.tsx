@@ -73,11 +73,11 @@ export default function ResetPassword() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-primary/5 via-background to-secondary/5 p-4">
-      <Card className="w-full max-w-md shadow-elevated animate-fade-in">
-        <CardHeader className="space-y-4 text-center">
-          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-xl gradient-primary shadow-soft">
-            <Clock className="h-7 w-7 text-primary-foreground" />
+    <div className="flex min-h-screen items-center justify-center bg-background p-4">
+      <Card className="w-full max-w-sm border-border/50 shadow-sm">
+        <CardHeader className="space-y-4 text-center pb-2">
+          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-lg bg-primary">
+            <Clock className="h-6 w-6 text-primary-foreground" />
           </div>
           <div>
             <CardTitle className="text-2xl font-bold">Nova Senha</CardTitle>
@@ -124,7 +124,7 @@ export default function ResetPassword() {
           <CardFooter>
             <Button
               type="submit"
-              className="w-full h-11 gradient-primary"
+              className="w-full h-10"
               disabled={isLoading}
             >
               {isLoading ? (

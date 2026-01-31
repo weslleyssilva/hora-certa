@@ -183,11 +183,10 @@ export default function AdminUsers() {
       <PageHeader
         title="Usuários"
         description="Gerenciar usuários do sistema"
-        icon={Users}
       >
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
-            <Button onClick={openCreateDialog} className="gradient-primary">
+            <Button onClick={openCreateDialog}>
               <Plus className="mr-2 h-4 w-4" />
               Novo Usuário
             </Button>
