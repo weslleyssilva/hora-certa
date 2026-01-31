@@ -117,11 +117,10 @@ export default function AdminClients() {
       <PageHeader
         title="Clientes"
         description="Gerenciar clientes do sistema"
-        icon={Building2}
       >
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
-            <Button onClick={openCreateDialog} className="gradient-primary">
+            <Button onClick={openCreateDialog}>
               <Plus className="mr-2 h-4 w-4" />
               Novo Cliente
             </Button>

@@ -336,11 +336,10 @@ export default function AdminTickets() {
       <PageHeader
         title="Atendimentos"
         description="Gerenciar chamados e atendimentos"
-        icon={Ticket}
       >
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
-            <Button onClick={openCreateDialog} className="gradient-primary">
+            <Button onClick={openCreateDialog}>
               <Plus className="mr-2 h-4 w-4" />
               Novo Atendimento
             </Button>

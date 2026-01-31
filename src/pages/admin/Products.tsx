@@ -168,11 +168,10 @@ export default function AdminProducts() {
       <PageHeader
         title="Produtos"
         description="Gerenciar produtos utilizados por clientes"
-        icon={Package}
       >
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
-            <Button onClick={openCreateDialog} className="gradient-primary">
+            <Button onClick={openCreateDialog}>
               <Plus className="mr-2 h-4 w-4" />
               Novo Produto
             </Button>

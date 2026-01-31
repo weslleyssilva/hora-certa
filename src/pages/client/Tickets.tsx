@@ -164,9 +164,8 @@ export default function ClientTickets() {
       <PageHeader
         title="Chamados"
         description="Abra e acompanhe seus chamados de suporte"
-        icon={Ticket}
       >
-        <Button onClick={openCreateDialog} className="gradient-primary">
+        <Button onClick={openCreateDialog}>
           <Plus className="mr-2 h-4 w-4" />
           Novo Chamado
         </Button>

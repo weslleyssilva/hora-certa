@@ -59,7 +59,6 @@ export default function ClientProducts() {
       <PageHeader
         title="Produtos"
         description="Produtos e itens utilizados por mês"
-        icon={Package}
       />
 
       {/* Seletor de Mês */}

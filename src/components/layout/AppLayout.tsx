@@ -8,8 +8,6 @@ import {
   Package,
   LogOut,
   Clock,
-  ChevronLeft,
-  Menu,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
@@ -64,22 +62,20 @@ function AppSidebarContent() {
   return (
     <Sidebar
       className={cn(
-        "border-r-0 transition-all duration-300",
-        collapsed ? "w-16" : "w-64"
+        "border-r border-border/50 bg-card transition-all duration-200",
+        collapsed ? "w-16" : "w-60"
       )}
       collapsible="icon"
     >
-      <SidebarHeader className="border-b border-sidebar-border p-4">
+      <SidebarHeader className="border-b border-border/50 p-4">
         <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-sidebar-primary">
-            <Clock className="h-5 w-5 text-sidebar-primary-foreground" />
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary">
+            <Clock className="h-5 w-5 text-primary-foreground" />
           </div>
           {!collapsed && (
             <div className="flex flex-col">
-              <span className="text-sm font-semibold text-sidebar-foreground">
-                {APP_NAME}
-              </span>
-              <span className="text-xs text-sidebar-foreground/60">
+              <span className="text-sm font-semibold">{APP_NAME}</span>
+              <span className="text-xs text-muted-foreground">
                 {isAdmin ? "Administração" : "Portal do Cliente"}
               </span>
             </div>
@@ -87,10 +83,10 @@ function AppSidebarContent() {
         </div>
       </SidebarHeader>
 
-      <SidebarContent className="px-2 py-4">
+      <SidebarContent className="px-3 py-4">
         <SidebarGroup>
           <SidebarGroupContent>
-            <SidebarMenu>
+            <SidebarMenu className="space-y-1">
               {menuItems.map((item) => (
                 <SidebarMenuItem key={item.url}>
                   <SidebarMenuButton
@@ -101,13 +97,13 @@ function AppSidebarContent() {
                     <button
                       onClick={() => navigate(item.url)}
                       className={cn(
-                        "flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
+                        "flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors",
                         isActive(item.url)
-                          ? "bg-sidebar-accent text-sidebar-accent-foreground"
-                          : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
+                          ? "bg-accent text-accent-foreground"
+                          : "text-muted-foreground hover:bg-muted hover:text-foreground"
                       )}
                     >
-                      <item.icon className="h-5 w-5 shrink-0" />
+                      <item.icon className="h-4 w-4 shrink-0" />
                       {!collapsed && <span>{item.title}</span>}
                     </button>
                   </SidebarMenuButton>
@@ -118,25 +114,26 @@ function AppSidebarContent() {
         </SidebarGroup>
       </SidebarContent>
 
-      <SidebarFooter className="border-t border-sidebar-border p-4">
+      <SidebarFooter className="border-t border-border/50 p-4">
         {!collapsed && profile && (
           <div className="mb-3 flex flex-col">
-            <span className="text-xs text-sidebar-foreground/60">Logado como</span>
-            <span className="text-sm font-medium text-sidebar-foreground truncate">
+            <span className="text-xs text-muted-foreground">Logado como</span>
+            <span className="text-sm font-medium truncate">
               {profile.email}
             </span>
           </div>
         )}
         <Button
           variant="ghost"
+          size="sm"
           className={cn(
-            "w-full justify-start text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground",
+            "w-full justify-start text-muted-foreground hover:bg-muted hover:text-foreground",
             collapsed && "justify-center px-0"
           )}
           onClick={handleLogout}
         >
-          <LogOut className="h-5 w-5" />
-          {!collapsed && <span className="ml-3">Sair</span>}
+          <LogOut className="h-4 w-4" />
+          {!collapsed && <span className="ml-2">Sair</span>}
         </Button>
       </SidebarFooter>
     </Sidebar>
@@ -146,11 +143,11 @@ function AppSidebarContent() {
 export function AppLayout({ children }: { children: React.ReactNode }) {
   return (
     <SidebarProvider>
-      <div className="flex min-h-screen w-full">
+      <div className="flex min-h-screen w-full bg-background">
         <AppSidebarContent />
         <main className="flex-1 overflow-auto">
-          <header className="sticky top-0 z-10 flex h-14 items-center border-b bg-background/95 px-4 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-            <SidebarTrigger className="mr-4" />
+          <header className="sticky top-0 z-10 flex h-14 items-center border-b border-border/50 bg-background px-6">
+            <SidebarTrigger />
           </header>
           <div className="p-6">{children}</div>
         </main>
