@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -11,7 +12,7 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Ticket, Search, Eye, Plus } from "lucide-react";
+import { Ticket, Search, Eye, Plus, Download } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { formatDate, formatTime, formatHours, truncate } from "@/lib/utils";
@@ -33,6 +34,7 @@ interface TicketData {
 
 export default function ClientTickets() {
   const { profile, user } = useAuth();
+  const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(true);
   const [tickets, setTickets] = useState<TicketData[]>([]);
   const [filteredTickets, setFilteredTickets] = useState<TicketData[]>([]);
@@ -158,6 +160,13 @@ export default function ClientTickets() {
   const openTickets = tickets.filter((t) => t.status === TICKET_STATUS.OPEN);
   const inProgressTickets = tickets.filter((t) => t.status === TICKET_STATUS.IN_PROGRESS);
   const completedTickets = tickets.filter((t) => t.status === TICKET_STATUS.COMPLETED);
+  const handleExportPDF = () => {
+    const params = new URLSearchParams();
+    if (startDate) params.set("from", startDate);
+    if (endDate) params.set("to", endDate);
+    if (searchTerm) params.set("search", searchTerm);
+    navigate(`/reports/tickets?${params.toString()}`);
+  };
 
   return (
     <AppLayout>
@@ -165,10 +174,16 @@ export default function ClientTickets() {
         title="Chamados"
         description="Abra e acompanhe seus chamados de suporte"
       >
-        <Button onClick={openCreateDialog}>
-          <Plus className="mr-2 h-4 w-4" />
-          Novo Chamado
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <Button variant="outline" onClick={handleExportPDF}>
+            <Download className="mr-2 h-4 w-4" />
+            Exportar PDF
+          </Button>
+          <Button onClick={openCreateDialog}>
+            <Plus className="mr-2 h-4 w-4" />
+            Novo Chamado
+          </Button>
+        </div>
       </PageHeader>
 
       {/* Cards de resumo */}

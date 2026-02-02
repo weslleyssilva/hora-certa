@@ -1,25 +1,26 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useCallback } from "react";
 import { format, parseISO, startOfMonth, endOfMonth } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { useNavigate } from "react-router-dom";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { KPICard } from "@/components/ui/kpi-card";
-import { ProgressBar } from "@/components/ui/progress-bar";
 import { AreaChart } from "@/components/charts/AreaChart";
 import { BarChart } from "@/components/charts/BarChart";
 import { HorizontalBarChart } from "@/components/charts/HorizontalBarChart";
+import { DonutChart } from "@/components/charts/DonutChart";
 import { PeriodFilter, Period } from "@/components/filters/PeriodFilter";
+import { CreateTicketModal } from "@/components/tickets/CreateTicketModal";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/ui/empty-state";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { Button } from "@/components/ui/button";
-import { Clock, FileText, TrendingUp, Users, Ticket, AlertTriangle } from "lucide-react";
+import { Clock, FileText, TrendingUp, Users, Ticket, AlertTriangle, Plus, Download } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { formatDate, truncate } from "@/lib/utils";
-import { useNavigate } from "react-router-dom";
 import { TICKET_STATUS_LABELS, TICKET_STATUS_VARIANTS } from "@/lib/constants";
 
 interface Contract {
@@ -56,6 +57,7 @@ export default function ClientDashboard() {
   const [isLoading, setIsLoading] = useState(true);
   const [contract, setContract] = useState<Contract | null>(null);
   const [clientName, setClientName] = useState("");
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [period, setPeriod] = useState<Period>(() => {
     const now = new Date();
     return { startDate: startOfMonth(now), endDate: endOfMonth(now) };
@@ -212,6 +214,17 @@ export default function ClientDashboard() {
     }
   };
 
+  const handleRefresh = useCallback(() => {
+    loadInitialData();
+    loadDashboardData();
+  }, [profile?.client_id, period]);
+
+  const handleExportPDF = () => {
+    const from = format(period.startDate, "yyyy-MM-dd");
+    const to = format(period.endDate, "yyyy-MM-dd");
+    navigate(`/reports/tickets?from=${from}&to=${to}`);
+  };
+
   const saldoHoras = contract ? contract.contracted_hours - consumedHours : 0;
 
   if (isLoading && !contract && !clientName) {
@@ -238,12 +251,22 @@ export default function ClientDashboard() {
             description={clientName ? `Bem-vindo, ${clientName}` : "Carregando..."}
             className="mb-0"
           />
-          <PeriodFilter
-            value={period}
-            onChange={setPeriod}
-            contractPeriod={contractPeriod}
-            showContractOption={!!contract}
-          />
+          <div className="flex flex-wrap items-center gap-2">
+            <PeriodFilter
+              value={period}
+              onChange={setPeriod}
+              contractPeriod={contractPeriod}
+              showContractOption={!!contract}
+            />
+            <Button variant="outline" size="sm" onClick={handleExportPDF}>
+              <Download className="mr-2 h-4 w-4" />
+              Exportar PDF
+            </Button>
+            <Button onClick={() => setIsCreateModalOpen(true)}>
+              <Plus className="mr-2 h-4 w-4" />
+              Abrir Chamado
+            </Button>
+          </div>
         </div>
 
         {/* No contract warning */}
@@ -261,44 +284,53 @@ export default function ClientDashboard() {
           </Card>
         )}
 
-        {/* KPIs */}
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <KPICard
-            title="Horas Contratadas"
-            value={contract ? `${contract.contracted_hours}h` : "N/A"}
-            icon={FileText}
-            variant="primary"
-          />
-          <KPICard
-            title="Horas Consumidas"
-            value={`${consumedHours}h`}
-            icon={Clock}
-          />
-          <KPICard
-            title="Saldo Disponível"
-            value={`${saldoHoras}h`}
-            icon={TrendingUp}
-            variant={saldoHoras < 0 ? "destructive" : saldoHoras < 5 ? "warning" : "success"}
-          />
-          <KPICard
-            title="Atendimentos"
-            value={ticketCount}
-            icon={Users}
-          />
-        </div>
+        {/* KPIs and Donut Chart */}
+        <div className="grid gap-6 lg:grid-cols-3">
+          {/* KPI Cards */}
+          <div className="grid gap-4 sm:grid-cols-2 lg:col-span-2">
+            <KPICard
+              title="Horas Contratadas"
+              value={contract ? `${contract.contracted_hours}h` : "N/A"}
+              icon={FileText}
+              variant="primary"
+            />
+            <KPICard
+              title="Horas Consumidas"
+              value={`${consumedHours}h`}
+              icon={Clock}
+            />
+            <KPICard
+              title="Saldo Disponível"
+              value={`${saldoHoras}h`}
+              icon={TrendingUp}
+              variant={saldoHoras < 0 ? "destructive" : saldoHoras < 5 ? "warning" : "success"}
+            />
+            <KPICard
+              title="Atendimentos"
+              value={ticketCount}
+              icon={Users}
+            />
+          </div>
 
-        {/* Progress bar */}
-        {contract && (
-          <Card className="border-border/50">
-            <CardContent className="pt-6">
-              <ProgressBar
-                value={consumedHours}
-                max={contract.contracted_hours}
-                label="Consumo do Contrato"
-              />
-            </CardContent>
-          </Card>
-        )}
+          {/* Donut Chart */}
+          {contract ? (
+            <DonutChart
+              title="Consumo do Contrato"
+              description="Horas consumidas vs. contratadas"
+              consumed={consumedHours}
+              contracted={contract.contracted_hours}
+            />
+          ) : (
+            <Card className="flex items-center justify-center">
+              <CardContent className="py-8 text-center">
+                <EmptyState
+                  title="Sem contrato ativo"
+                  description="Não é possível exibir o gráfico de consumo."
+                />
+              </CardContent>
+            </Card>
+          )}
+        </div>
 
         {/* Open tickets */}
         {openTickets.length > 0 && (
@@ -441,6 +473,13 @@ export default function ClientDashboard() {
             </CardContent>
           </Card>
         </div>
+
+        {/* Create Ticket Modal */}
+        <CreateTicketModal
+          open={isCreateModalOpen}
+          onOpenChange={setIsCreateModalOpen}
+          onSuccess={handleRefresh}
+        />
       </div>
     </AppLayout>
   );
