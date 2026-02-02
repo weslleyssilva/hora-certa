@@ -24,6 +24,9 @@ import AdminContracts from "./pages/admin/Contracts";
 import AdminTickets from "./pages/admin/Tickets";
 import AdminProducts from "./pages/admin/Products";
 
+// Reports
+import TicketsReport from "./pages/reports/TicketsReport";
+
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -89,6 +92,13 @@ function AppRoutes() {
       <Route path="/admin/products" element={
         <ProtectedRoute requireAdmin>
           <AdminProducts />
+        </ProtectedRoute>
+      } />
+
+      {/* Reports */}
+      <Route path="/reports/tickets" element={
+        <ProtectedRoute>
+          <TicketsReport />
         </ProtectedRoute>
       } />
 

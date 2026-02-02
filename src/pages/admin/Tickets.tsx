@@ -14,7 +14,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Ticket, Plus, Pencil, Trash2, Search, PlayCircle, CheckCircle } from "lucide-react";
+import { Ticket, Plus, Pencil, Trash2, Search, PlayCircle, CheckCircle, Download } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { formatDate, formatHours, truncate, calculateBilledHours, calculateDurationMinutes } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
@@ -43,6 +44,7 @@ interface Client {
 
 export default function AdminTickets() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(true);
   const [tickets, setTickets] = useState<TicketData[]>([]);
   const [clients, setClients] = useState<Client[]>([]);
@@ -329,6 +331,13 @@ export default function AdminTickets() {
   const filteredPending = filterTickets(pendingTickets);
   const filteredCompleted = filterTickets(completedTickets);
 
+  const handleExportPDF = () => {
+    const params = new URLSearchParams();
+    if (filterClient) params.set("clientId", filterClient);
+    if (searchTerm) params.set("search", searchTerm);
+    navigate(`/reports/tickets?${params.toString()}`);
+  };
+
   if (isLoading) return <AppLayout><PageLoader /></AppLayout>;
 
   return (
@@ -337,13 +346,18 @@ export default function AdminTickets() {
         title="Atendimentos"
         description="Gerenciar chamados e atendimentos"
       >
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogTrigger asChild>
-            <Button onClick={openCreateDialog}>
-              <Plus className="mr-2 h-4 w-4" />
-              Novo Atendimento
-            </Button>
-          </DialogTrigger>
+        <div className="flex flex-wrap gap-2">
+          <Button variant="outline" onClick={handleExportPDF}>
+            <Download className="mr-2 h-4 w-4" />
+            Exportar PDF
+          </Button>
+          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+            <DialogTrigger asChild>
+              <Button onClick={openCreateDialog}>
+                <Plus className="mr-2 h-4 w-4" />
+                Novo Atendimento
+              </Button>
+            </DialogTrigger>
           <DialogContent className="max-w-lg">
             <DialogHeader>
               <DialogTitle>{editingTicket ? "Editar Atendimento" : "Novo Atendimento"}</DialogTitle>
@@ -457,6 +471,7 @@ export default function AdminTickets() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+        </div>
       </PageHeader>
 
       {/* Cards de resumo */}

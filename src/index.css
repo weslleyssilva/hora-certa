@@ -203,3 +203,46 @@
     @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2;
   }
 }
+
+/* Print styles for PDF export */
+@media print {
+  body {
+    background: white !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  .print\:hidden {
+    display: none !important;
+  }
+
+  /* Ensure colors print correctly */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Better page breaks */
+  table {
+    page-break-inside: auto;
+  }
+
+  tr {
+    page-break-inside: avoid;
+    page-break-after: auto;
+  }
+
+  thead {
+    display: table-header-group;
+  }
+
+  /* Reset shadows and borders for clean print */
+  .shadow, .shadow-sm, .shadow-md, .shadow-lg {
+    box-shadow: none !important;
+  }
+
+  /* Make borders visible */
+  .border {
+    border-color: #e5e7eb !important;
+  }
+}
