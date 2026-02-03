@@ -6,8 +6,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { PageLoader } from "@/components/ui/loading-spinner";
 import { Button } from "@/components/ui/button";
-import { Printer, ArrowLeft } from "lucide-react";
+import { Printer, ArrowLeft, Download } from "lucide-react";
 import { formatDate, formatHours } from "@/lib/utils";
+import { PDFDownloadLink } from "@react-pdf/renderer";
+import { TicketsReportPDF } from "./TicketsReportPDF";
 
 interface TicketData {
   id: string;
@@ -185,10 +187,31 @@ export default function TicketsReport() {
           <ArrowLeft className="mr-2 h-4 w-4" />
           Voltar
         </Button>
-        <Button onClick={handlePrint}>
-          <Printer className="mr-2 h-4 w-4" />
-          Imprimir / Exportar PDF
-        </Button>
+        <div className="flex gap-2">
+          <PDFDownloadLink
+            document={
+              <TicketsReportPDF
+                clientName={clientName}
+                periodStart={fromParam || ""}
+                periodEnd={toParam || ""}
+                tickets={tickets}
+                contractedHours={contract?.contracted_hours}
+              />
+            }
+            fileName={`relatorio-atendimentos-${fromParam || "inicio"}-${toParam || "fim"}.pdf`}
+          >
+            {({ loading }) => (
+              <Button variant="outline" disabled={loading}>
+                <Download className="mr-2 h-4 w-4" />
+                {loading ? "Gerando..." : "Baixar PDF"}
+              </Button>
+            )}
+          </PDFDownloadLink>
+          <Button onClick={handlePrint}>
+            <Printer className="mr-2 h-4 w-4" />
+            Imprimir
+          </Button>
+        </div>
       </div>
 
       {/* Report content */}
