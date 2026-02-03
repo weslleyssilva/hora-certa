@@ -13,6 +13,7 @@ import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import { APP_NAME } from "@/lib/constants";
 import { Button } from "@/components/ui/button";
+import { ThemeToggle } from "@/components/layout/ThemeToggle";
 import {
   Sidebar,
   SidebarContent,
@@ -146,8 +147,9 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
       <div className="flex min-h-screen w-full bg-background">
         <AppSidebarContent />
         <main className="flex-1 overflow-auto">
-          <header className="sticky top-0 z-10 flex h-14 items-center border-b border-border/50 bg-background px-6">
+          <header className="sticky top-0 z-10 flex h-14 items-center justify-between border-b border-border/50 bg-background px-6">
             <SidebarTrigger />
+            <ThemeToggle />
           </header>
           <div className="p-6">{children}</div>
         </main>
