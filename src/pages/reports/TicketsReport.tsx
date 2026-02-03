@@ -180,7 +180,7 @@ export default function TicketsReport() {
   const emissionDate = format(new Date(), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR });
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-white text-gray-900">
       {/* Print controls - hidden when printing */}
       <div className="print:hidden sticky top-0 z-10 flex items-center justify-between border-b bg-background p-4">
         <Button variant="outline" onClick={handleBack}>
@@ -217,51 +217,51 @@ export default function TicketsReport() {
       {/* Report content */}
       <div className="mx-auto max-w-4xl p-8 print:p-4">
         {/* Header */}
-        <div className="mb-8 border-b pb-6">
-          <h1 className="text-2xl font-bold text-foreground">
+        <div className="mb-8 border-b border-gray-300 pb-6">
+          <h1 className="text-2xl font-bold text-gray-900">
             RELATÓRIO DE ATENDIMENTOS
           </h1>
-          <div className="mt-4 space-y-1 text-sm text-muted-foreground">
+          <div className="mt-4 space-y-1 text-sm">
             <p>
-              <span className="font-medium text-foreground">Cliente:</span>{" "}
-              {clientName}
+              <span className="font-medium text-gray-900">Cliente:</span>{" "}
+              <span className="text-gray-700">{clientName}</span>
             </p>
             <p>
-              <span className="font-medium text-foreground">Período:</span>{" "}
-              {periodStart} - {periodEnd}
+              <span className="font-medium text-gray-900">Período:</span>{" "}
+              <span className="text-gray-700">{periodStart} - {periodEnd}</span>
             </p>
             <p>
-              <span className="font-medium text-foreground">Emissão:</span>{" "}
-              {emissionDate}
+              <span className="font-medium text-gray-900">Emissão:</span>{" "}
+              <span className="text-gray-700">{emissionDate}</span>
             </p>
           </div>
         </div>
 
         {/* Summary */}
-        <div className="mb-8 rounded-lg border bg-muted/30 p-6">
-          <h2 className="mb-4 text-lg font-semibold">RESUMO</h2>
+        <div className="mb-8 rounded-lg border border-gray-300 bg-gray-100 p-6 print:bg-gray-100">
+          <h2 className="mb-4 text-lg font-semibold text-gray-900">RESUMO</h2>
           <div className="grid grid-cols-2 gap-4 text-sm md:grid-cols-4">
             <div>
-              <p className="text-muted-foreground">Total de Atendimentos</p>
-              <p className="text-xl font-bold">{totalTickets}</p>
+              <p className="text-gray-600">Total de Atendimentos</p>
+              <p className="text-xl font-bold text-gray-900">{totalTickets}</p>
             </div>
             <div>
-              <p className="text-muted-foreground">Horas Consumidas</p>
-              <p className="text-xl font-bold">{formatHours(totalHours)}</p>
+              <p className="text-gray-600">Horas Consumidas</p>
+              <p className="text-xl font-bold text-gray-900">{formatHours(totalHours)}</p>
             </div>
             {contract && (
               <>
                 <div>
-                  <p className="text-muted-foreground">Horas Contratadas</p>
-                  <p className="text-xl font-bold">
+                  <p className="text-gray-600">Horas Contratadas</p>
+                  <p className="text-xl font-bold text-gray-900">
                     {formatHours(contractedHours)}
                   </p>
                 </div>
                 <div>
-                  <p className="text-muted-foreground">Saldo</p>
+                  <p className="text-gray-600">Saldo</p>
                   <p
                     className={`text-xl font-bold ${
-                      remainingHours <= 0 ? "text-destructive" : "text-success"
+                      remainingHours <= 0 ? "text-red-600" : "text-green-600"
                     }`}
                   >
                     {formatHours(remainingHours)}
@@ -274,52 +274,52 @@ export default function TicketsReport() {
 
         {/* Tickets table */}
         <div>
-          <h2 className="mb-4 text-lg font-semibold">ATENDIMENTOS</h2>
+          <h2 className="mb-4 text-lg font-semibold text-gray-900">ATENDIMENTOS</h2>
           {tickets.length > 0 ? (
-            <table className="w-full border-collapse text-sm">
+            <table className="w-full border-collapse text-sm border border-gray-300">
               <thead>
-                <tr className="border-b bg-muted/50">
-                  <th className="p-2 text-left font-medium">Data</th>
-                  <th className="p-2 text-left font-medium">Solicitante</th>
-                  <th className="p-2 text-center font-medium">Horas</th>
-                  <th className="p-2 text-left font-medium">Descrição</th>
+                <tr className="border-b border-gray-300 bg-gray-100 print:bg-gray-100">
+                  <th className="p-2 text-left font-semibold text-gray-900">Data</th>
+                  <th className="p-2 text-left font-semibold text-gray-900">Solicitante</th>
+                  <th className="p-2 text-center font-semibold text-gray-900">Horas</th>
+                  <th className="p-2 text-left font-semibold text-gray-900">Descrição</th>
                 </tr>
               </thead>
               <tbody>
                 {tickets.map((ticket) => (
-                  <tr key={ticket.id} className="border-b">
-                    <td className="p-2 whitespace-nowrap">
+                  <tr key={ticket.id} className="border-b border-gray-200">
+                    <td className="p-2 whitespace-nowrap text-gray-800">
                       {formatDate(ticket.service_date)}
                     </td>
-                    <td className="p-2">{ticket.requester_name}</td>
-                    <td className="p-2 text-center font-medium">
+                    <td className="p-2 text-gray-800">{ticket.requester_name}</td>
+                    <td className="p-2 text-center font-medium text-gray-800">
                       {formatHours(ticket.billed_hours)}
                     </td>
-                    <td className="p-2 max-w-xs">
+                    <td className="p-2 max-w-xs text-gray-800">
                       <span className="line-clamp-2">{ticket.description}</span>
                     </td>
                   </tr>
                 ))}
               </tbody>
               <tfoot>
-                <tr className="bg-muted/50 font-medium">
-                  <td className="p-2" colSpan={2}>
+                <tr className="bg-gray-100 font-semibold print:bg-gray-100">
+                  <td className="p-2 text-gray-900" colSpan={2}>
                     Total
                   </td>
-                  <td className="p-2 text-center">{formatHours(totalHours)}</td>
+                  <td className="p-2 text-center text-gray-900">{formatHours(totalHours)}</td>
                   <td className="p-2"></td>
                 </tr>
               </tfoot>
             </table>
           ) : (
-            <p className="py-8 text-center text-muted-foreground">
+            <p className="py-8 text-center text-gray-500">
               Nenhum atendimento encontrado no período selecionado.
             </p>
           )}
         </div>
 
         {/* Footer */}
-        <div className="mt-12 border-t pt-4 text-center text-xs text-muted-foreground">
+        <div className="mt-12 border-t border-gray-300 pt-4 text-center text-xs text-gray-500">
           Relatório gerado automaticamente pelo sistema
         </div>
       </div>
