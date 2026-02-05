@@ -45,7 +45,9 @@ export type Database = {
           created_at: string
           end_date: string
           id: string
+          is_recurring: boolean
           notes: string | null
+          recurrence_months: number
           start_date: string
           updated_at: string
         }
@@ -55,7 +57,9 @@ export type Database = {
           created_at?: string
           end_date: string
           id?: string
+          is_recurring?: boolean
           notes?: string | null
+          recurrence_months?: number
           start_date: string
           updated_at?: string
         }
@@ -65,7 +69,9 @@ export type Database = {
           created_at?: string
           end_date?: string
           id?: string
+          is_recurring?: boolean
           notes?: string | null
+          recurrence_months?: number
           start_date?: string
           updated_at?: string
         }

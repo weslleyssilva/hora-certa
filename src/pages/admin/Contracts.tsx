@@ -14,7 +14,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { FileText, Plus, Pencil, Trash2 } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+ import { RefreshCw } from "lucide-react";
+ import { Switch } from "@/components/ui/switch";
+ import { supabase } from "@/integrations/supabase/client";
 import { formatDate, isContractActive } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
 
@@ -25,6 +27,8 @@ interface Contract {
   end_date: string;
   contracted_hours: number;
   notes: string | null;
+   is_recurring: boolean;
+   recurrence_months: number;
   clients?: { name: string } | null;
 }
 
@@ -45,6 +49,8 @@ export default function AdminContracts() {
     end_date: "",
     contracted_hours: "",
     notes: "",
+     is_recurring: false,
+     recurrence_months: "1",
   });
   const [filterClient, setFilterClient] = useState("");
   const [isSaving, setIsSaving] = useState(false);
@@ -81,6 +87,8 @@ export default function AdminContracts() {
       end_date: "",
       contracted_hours: "",
       notes: "",
+       is_recurring: false,
+       recurrence_months: "1",
     });
     setIsDialogOpen(true);
   };
@@ -93,6 +101,8 @@ export default function AdminContracts() {
       end_date: contract.end_date,
       contracted_hours: contract.contracted_hours.toString(),
       notes: contract.notes || "",
+       is_recurring: contract.is_recurring,
+       recurrence_months: contract.recurrence_months.toString(),
     });
     setIsDialogOpen(true);
   };
@@ -122,6 +132,8 @@ export default function AdminContracts() {
         end_date: formData.end_date,
         contracted_hours: hours,
         notes: formData.notes || null,
+         is_recurring: formData.is_recurring,
+         recurrence_months: parseInt(formData.recurrence_months) || 1,
       };
 
       if (editingContract) {
@@ -255,6 +267,42 @@ export default function AdminContracts() {
                   rows={3}
                 />
               </div>
+               <div className="flex items-center justify-between rounded-lg border p-4">
+                 <div className="space-y-0.5">
+                   <Label htmlFor="is_recurring">Contrato Recorrente</Label>
+                   <p className="text-sm text-muted-foreground">
+                     Renova automaticamente quando vencer
+                   </p>
+                 </div>
+                 <Switch
+                   id="is_recurring"
+                   checked={formData.is_recurring}
+                   onCheckedChange={(checked) =>
+                     setFormData({ ...formData, is_recurring: checked })
+                   }
+                 />
+               </div>
+               {formData.is_recurring && (
+                 <div className="space-y-2">
+                   <Label htmlFor="recurrence_months">Período de Renovação</Label>
+                   <Select
+                     value={formData.recurrence_months}
+                     onValueChange={(value) =>
+                       setFormData({ ...formData, recurrence_months: value })
+                     }
+                   >
+                     <SelectTrigger>
+                       <SelectValue />
+                     </SelectTrigger>
+                     <SelectContent>
+                       <SelectItem value="1">Mensal</SelectItem>
+                       <SelectItem value="3">Trimestral</SelectItem>
+                       <SelectItem value="6">Semestral</SelectItem>
+                       <SelectItem value="12">Anual</SelectItem>
+                     </SelectContent>
+                   </Select>
+                 </div>
+               )}
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
@@ -305,6 +353,7 @@ export default function AdminContracts() {
                   <TableHead>Cliente</TableHead>
                   <TableHead>Período</TableHead>
                   <TableHead>Horas</TableHead>
+                   <TableHead>Recorrência</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead className="text-right">Ações</TableHead>
                 </TableRow>
@@ -321,6 +370,24 @@ export default function AdminContracts() {
                         {formatDate(contract.start_date)} - {formatDate(contract.end_date)}
                       </TableCell>
                       <TableCell>{contract.contracted_hours}h</TableCell>
+                       <TableCell>
+                         {contract.is_recurring ? (
+                           <span className="inline-flex items-center gap-1 text-sm text-primary">
+                             <RefreshCw className="h-3 w-3" />
+                             {contract.recurrence_months === 1
+                               ? "Mensal"
+                               : contract.recurrence_months === 3
+                               ? "Trimestral"
+                               : contract.recurrence_months === 6
+                               ? "Semestral"
+                               : contract.recurrence_months === 12
+                               ? "Anual"
+                               : `${contract.recurrence_months} meses`}
+                           </span>
+                         ) : (
+                           <span className="text-sm text-muted-foreground">—</span>
+                         )}
+                       </TableCell>
                       <TableCell>
                         <StatusBadge
                           status={
