@@ -19,6 +19,7 @@ import { FileText, Plus, Pencil, Trash2 } from "lucide-react";
  import { supabase } from "@/integrations/supabase/client";
 import { formatDate, isContractActive } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
+ import { contractSchema, getValidationError } from "@/lib/validations";
 
 interface Contract {
   id: string;
@@ -108,19 +109,22 @@ export default function AdminContracts() {
   };
 
   const handleSave = async () => {
-    if (!formData.client_id || !formData.start_date || !formData.end_date || !formData.contracted_hours) {
-      toast({ title: "Preencha todos os campos obrigatórios", variant: "destructive" });
-      return;
-    }
-
-    const hours = parseInt(formData.contracted_hours);
-    if (isNaN(hours) || hours < 0) {
-      toast({ title: "Horas contratadas inválidas", variant: "destructive" });
-      return;
-    }
-
-    if (formData.end_date < formData.start_date) {
-      toast({ title: "Data fim deve ser maior ou igual à data início", variant: "destructive" });
+     const hours = parseInt(formData.contracted_hours) || 0;
+     const recurrenceMonths = parseInt(formData.recurrence_months) || 1;
+ 
+     // Validation
+     const result = contractSchema.safeParse({
+       client_id: formData.client_id,
+       start_date: formData.start_date,
+       end_date: formData.end_date,
+       contracted_hours: hours,
+       notes: formData.notes.trim() || null,
+       is_recurring: formData.is_recurring,
+       recurrence_months: recurrenceMonths,
+     });
+     const error = getValidationError(result);
+     if (error) {
+       toast({ title: error, variant: "destructive" });
       return;
     }
 
@@ -131,9 +135,9 @@ export default function AdminContracts() {
         start_date: formData.start_date,
         end_date: formData.end_date,
         contracted_hours: hours,
-        notes: formData.notes || null,
+         notes: formData.notes.trim() || null,
          is_recurring: formData.is_recurring,
-         recurrence_months: parseInt(formData.recurrence_months) || 1,
+          recurrence_months: recurrenceMonths,
       };
 
       if (editingContract) {
@@ -265,6 +269,7 @@ export default function AdminContracts() {
                   onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
                   placeholder="Observações opcionais..."
                   rows={3}
+                   maxLength={2000}
                 />
               </div>
                <div className="flex items-center justify-between rounded-lg border p-4">

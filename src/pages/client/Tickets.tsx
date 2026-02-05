@@ -18,6 +18,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { formatDate, formatTime, formatHours, truncate } from "@/lib/utils";
 import { TICKET_STATUS, TICKET_STATUS_LABELS, TICKET_STATUS_VARIANTS } from "@/lib/constants";
 import { toast } from "@/hooks/use-toast";
+ import { clientTicketSchema, getValidationError } from "@/lib/validations";
 
 interface TicketData {
   id: string;
@@ -115,8 +116,14 @@ export default function ClientTickets() {
   };
 
   const handleCreateTicket = async () => {
-    if (!formData.title || !formData.description) {
-      toast({ title: "Preencha todos os campos", variant: "destructive" });
+     // Validation
+     const result = clientTicketSchema.safeParse({
+       title: formData.title.trim(),
+       description: formData.description.trim(),
+     });
+     const error = getValidationError(result);
+     if (error) {
+       toast({ title: error, variant: "destructive" });
       return;
     }
 
@@ -130,8 +137,8 @@ export default function ClientTickets() {
       const { error } = await supabase.from("tickets").insert({
         client_id: profile.client_id,
         created_by_user_id: user.id,
-        title: formData.title,
-        description: formData.description,
+         title: formData.title.trim(),
+         description: formData.description.trim(),
         requester_name: profile.email,
         service_date: new Date().toISOString().split("T")[0],
         billed_hours: 0,
@@ -416,6 +423,7 @@ export default function ClientTickets() {
                 value={formData.title}
                 onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                 placeholder="Resumo do problema ou solicitação"
+                 maxLength={200}
               />
             </div>
             <div className="space-y-2">
@@ -426,6 +434,7 @@ export default function ClientTickets() {
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                 placeholder="Descreva detalhadamente o problema ou solicitação..."
                 rows={6}
+                 maxLength={5000}
               />
             </div>
           </div>

@@ -16,6 +16,7 @@ import { Package, Plus, Pencil, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { getCompetenceOptions, formatCompetence, getCurrentCompetence } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
+ import { productSchema, getValidationError } from "@/lib/validations";
 
 interface ProductData {
   id: string;
@@ -100,14 +101,19 @@ export default function AdminProducts() {
   };
 
   const handleSave = async () => {
-    if (!formData.client_id || !formData.competence_month || !formData.product_name || !formData.quantity) {
-      toast({ title: "Preencha todos os campos obrigatórios", variant: "destructive" });
-      return;
-    }
-
-    const quantity = parseFloat(formData.quantity);
-    if (isNaN(quantity) || quantity <= 0) {
-      toast({ title: "Quantidade deve ser maior que zero", variant: "destructive" });
+     const quantity = parseFloat(formData.quantity) || 0;
+ 
+     // Validation
+     const result = productSchema.safeParse({
+       client_id: formData.client_id,
+       competence_month: formData.competence_month,
+       product_name: formData.product_name.trim(),
+       quantity,
+       notes: formData.notes.trim() || null,
+     });
+     const error = getValidationError(result);
+     if (error) {
+       toast({ title: error, variant: "destructive" });
       return;
     }
 
@@ -116,9 +122,9 @@ export default function AdminProducts() {
       const data = {
         client_id: formData.client_id,
         competence_month: formData.competence_month,
-        product_name: formData.product_name,
+         product_name: formData.product_name.trim(),
         quantity,
-        notes: formData.notes || null,
+         notes: formData.notes.trim() || null,
       };
 
       if (editingProduct) {
@@ -227,6 +233,7 @@ export default function AdminProducts() {
                   value={formData.product_name}
                   onChange={(e) => setFormData({ ...formData, product_name: e.target.value })}
                   placeholder="Ex: Licença Office 365"
+                   maxLength={255}
                 />
               </div>
               <div className="space-y-2">
@@ -249,6 +256,7 @@ export default function AdminProducts() {
                   onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
                   placeholder="Observações opcionais..."
                   rows={3}
+                   maxLength={2000}
                 />
               </div>
             </div>

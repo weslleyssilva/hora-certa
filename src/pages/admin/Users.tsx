@@ -17,6 +17,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { getRoleLabel } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
 import { USER_ROLES, AppRole } from "@/lib/constants";
+ import { userCreateSchema, userUpdateSchema, getValidationError } from "@/lib/validations";
 
 interface Profile {
   id: string;
@@ -92,20 +93,30 @@ export default function AdminUsers() {
   };
 
   const handleSave = async () => {
-    if (!formData.email.trim()) {
-      toast({ title: "Email é obrigatório", variant: "destructive" });
-      return;
-    }
-
-    if (!editingProfile && !formData.password) {
-      toast({ title: "Senha é obrigatória para novos usuários", variant: "destructive" });
-      return;
-    }
-
-    if (formData.role === USER_ROLES.CLIENT_USER && !formData.client_id) {
-      toast({ title: "Usuário cliente deve estar vinculado a um cliente", variant: "destructive" });
-      return;
-    }
+     // Validation
+     if (editingProfile) {
+       const result = userUpdateSchema.safeParse({
+         role: formData.role,
+         client_id: formData.role === USER_ROLES.CLIENT_USER ? formData.client_id : null,
+       });
+       const error = getValidationError(result);
+       if (error) {
+         toast({ title: error, variant: "destructive" });
+         return;
+       }
+     } else {
+       const result = userCreateSchema.safeParse({
+         email: formData.email.trim(),
+         password: formData.password,
+         role: formData.role,
+         client_id: formData.role === USER_ROLES.CLIENT_USER ? formData.client_id : null,
+       });
+       const error = getValidationError(result);
+       if (error) {
+         toast({ title: error, variant: "destructive" });
+         return;
+       }
+     }
 
     setIsSaving(true);
     try {
@@ -127,33 +138,22 @@ export default function AdminUsers() {
 
         toast({ title: "Usuário atualizado com sucesso" });
       } else {
-        // Criar novo usuário via auth (precisamos usar edge function ou admin API)
-        // Por simplicidade, usamos signUp que também funciona
-        const { data: authData, error: authError } = await supabase.auth.signUp({
-          email: formData.email,
-          password: formData.password,
-          options: {
-            emailRedirectTo: `${window.location.origin}/`,
-          },
+         // Criar novo usuário via edge function segura
+         const { data, error } = await supabase.functions.invoke("admin-create-user", {
+           body: {
+             email: formData.email.trim(),
+             password: formData.password,
+             role: formData.role,
+             client_id: formData.role === USER_ROLES.CLIENT_USER ? formData.client_id : null,
+           },
         });
 
-        if (authError) throw authError;
-
-        if (authData.user) {
-          // Atualizar profile com role e client_id
-          const { error: profileError } = await supabase
-            .from("profiles")
-            .update({
-              role: formData.role,
-              client_id: formData.role === USER_ROLES.CLIENT_USER ? formData.client_id : null,
-            })
-            .eq("id", authData.user.id);
-
-          if (profileError) throw profileError;
-
-          // Atualizar user_roles
-          await supabase.from("user_roles").delete().eq("user_id", authData.user.id);
-          await supabase.from("user_roles").insert({ user_id: authData.user.id, role: formData.role });
+         if (error) {
+           throw new Error(error.message || "Erro ao criar usuário");
+         }
+ 
+         if (data?.error) {
+           throw new Error(data.error);
         }
 
         toast({ title: "Usuário criado com sucesso" });
