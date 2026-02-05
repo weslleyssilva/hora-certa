@@ -17,6 +17,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { formatDateTime, getStatusLabel } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
 import { CLIENT_STATUS } from "@/lib/constants";
+ import { clientSchema, getValidationError } from "@/lib/validations";
 
 interface Client {
   id: string;
@@ -67,8 +68,14 @@ export default function AdminClients() {
   };
 
   const handleSave = async () => {
-    if (!formData.name.trim()) {
-      toast({ title: "Nome é obrigatório", variant: "destructive" });
+     // Validation
+     const result = clientSchema.safeParse({
+       name: formData.name.trim(),
+       status: formData.status,
+     });
+     const error = getValidationError(result);
+     if (error) {
+       toast({ title: error, variant: "destructive" });
       return;
     }
 
@@ -77,14 +84,14 @@ export default function AdminClients() {
       if (editingClient) {
         const { error } = await supabase
           .from("clients")
-          .update({ name: formData.name, status: formData.status })
+           .update({ name: formData.name.trim(), status: formData.status })
           .eq("id", editingClient.id);
         if (error) throw error;
         toast({ title: "Cliente atualizado com sucesso" });
       } else {
         const { error } = await supabase
           .from("clients")
-          .insert({ name: formData.name, status: formData.status });
+           .insert({ name: formData.name.trim(), status: formData.status });
         if (error) throw error;
         toast({ title: "Cliente criado com sucesso" });
       }
@@ -140,6 +147,7 @@ export default function AdminClients() {
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   placeholder="Nome do cliente"
+                   maxLength={255}
                 />
               </div>
               <div className="space-y-2">
