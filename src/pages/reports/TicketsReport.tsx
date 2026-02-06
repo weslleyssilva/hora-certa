@@ -183,7 +183,7 @@ export default function TicketsReport() {
     <div className="min-h-screen bg-white text-gray-900">
       {/* Print controls - hidden when printing */}
       <div className="print:hidden sticky top-0 z-10 flex items-center justify-between border-b bg-background p-4">
-        <Button variant="outline" onClick={handleBack}>
+        <Button variant="outline" className="border-primary text-primary hover:bg-primary/10" onClick={handleBack}>
           <ArrowLeft className="mr-2 h-4 w-4" />
           Voltar
         </Button>
@@ -201,13 +201,13 @@ export default function TicketsReport() {
             fileName={`relatorio-atendimentos-${fromParam || "inicio"}-${toParam || "fim"}.pdf`}
           >
             {({ loading }) => (
-              <Button variant="outline" disabled={loading}>
+              <Button variant="outline" className="border-primary text-primary hover:bg-primary/10" disabled={loading}>
                 <Download className="mr-2 h-4 w-4" />
                 {loading ? "Gerando..." : "Baixar PDF"}
               </Button>
             )}
           </PDFDownloadLink>
-          <Button onClick={handlePrint}>
+          <Button variant="outline" className="border-primary text-primary hover:bg-primary/10" onClick={handlePrint}>
             <Printer className="mr-2 h-4 w-4" />
             Imprimir
           </Button>
