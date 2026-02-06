@@ -12,12 +12,12 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Users, Plus, Pencil, Trash2 } from "lucide-react";
+import { Users, Plus, Pencil, Key } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { getRoleLabel } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
 import { USER_ROLES, AppRole } from "@/lib/constants";
- import { userCreateSchema, userUpdateSchema, getValidationError } from "@/lib/validations";
+import { userCreateSchema, userUpdateSchema, getValidationError } from "@/lib/validations";
 
 interface Profile {
   id: string;
@@ -37,7 +37,11 @@ export default function AdminUsers() {
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [clients, setClients] = useState<Client[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false);
   const [editingProfile, setEditingProfile] = useState<Profile | null>(null);
+  const [passwordProfile, setPasswordProfile] = useState<Profile | null>(null);
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [formData, setFormData] = useState({
     email: "",
     password: "",
@@ -45,6 +49,7 @@ export default function AdminUsers() {
     client_id: "",
   });
   const [isSaving, setIsSaving] = useState(false);
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -176,6 +181,59 @@ export default function AdminUsers() {
     toast({ title: "Exclusão de usuários requer acesso ao painel de administração", variant: "destructive" });
   };
 
+  const openPasswordDialog = (profile: Profile) => {
+    setPasswordProfile(profile);
+    setNewPassword("");
+    setConfirmPassword("");
+    setIsPasswordDialogOpen(true);
+  };
+
+  const handleChangePassword = async () => {
+    if (!passwordProfile) return;
+
+    // Validate passwords
+    if (!newPassword || newPassword.length < 6) {
+      toast({ title: "Senha deve ter no mínimo 6 caracteres", variant: "destructive" });
+      return;
+    }
+
+    if (newPassword.length > 72) {
+      toast({ title: "Senha deve ter no máximo 72 caracteres", variant: "destructive" });
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      toast({ title: "As senhas não coincidem", variant: "destructive" });
+      return;
+    }
+
+    setIsChangingPassword(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("admin-update-password", {
+        body: {
+          user_id: passwordProfile.id,
+          new_password: newPassword,
+        },
+      });
+
+      if (error) {
+        throw new Error(error.message || "Erro ao alterar senha");
+      }
+
+      if (data?.error) {
+        throw new Error(data.error);
+      }
+
+      toast({ title: "Senha alterada com sucesso" });
+      setIsPasswordDialogOpen(false);
+    } catch (error: any) {
+      console.error("Error changing password:", error);
+      toast({ title: error.message || "Erro ao alterar senha", variant: "destructive" });
+    } finally {
+      setIsChangingPassword(false);
+    }
+  };
+
   if (isLoading) return <AppLayout><PageLoader /></AppLayout>;
 
   return (
@@ -300,8 +358,17 @@ export default function AdminUsers() {
                         variant="ghost"
                         size="sm"
                         onClick={() => openEditDialog(profile)}
+                        title="Editar usuário"
                       >
                         <Pencil className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => openPasswordDialog(profile)}
+                        title="Alterar senha"
+                      >
+                        <Key className="h-4 w-4" />
                       </Button>
                     </TableCell>
                   </TableRow>
@@ -322,6 +389,48 @@ export default function AdminUsers() {
           )}
         </CardContent>
       </Card>
+
+      {/* Password Change Dialog */}
+      <Dialog open={isPasswordDialogOpen} onOpenChange={setIsPasswordDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Alterar Senha</DialogTitle>
+            <DialogDescription>
+              Defina uma nova senha para {passwordProfile?.email}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="new_password">Nova Senha</Label>
+              <Input
+                id="new_password"
+                type="password"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                placeholder="Mínimo 6 caracteres"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="confirm_password">Confirmar Senha</Label>
+              <Input
+                id="confirm_password"
+                type="password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                placeholder="Digite a senha novamente"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsPasswordDialogOpen(false)}>
+              Cancelar
+            </Button>
+            <Button onClick={handleChangePassword} disabled={isChangingPassword}>
+              {isChangingPassword ? "Alterando..." : "Alterar Senha"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </AppLayout>
   );
 }
