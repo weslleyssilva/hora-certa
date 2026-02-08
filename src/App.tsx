@@ -28,6 +28,9 @@ import AdminProducts from "./pages/admin/Products";
 // Reports
 import TicketsReport from "./pages/reports/TicketsReport";
 
+// PWA
+import Install from "./pages/Install";
+
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -39,6 +42,9 @@ function AppRoutes() {
 
   return (
     <Routes>
+      {/* PWA Install */}
+      <Route path="/install" element={<Install />} />
+
       {/* Auth routes */}
       <Route path="/login" element={<Login />} />
       <Route path="/forgot-password" element={<ForgotPassword />} />
