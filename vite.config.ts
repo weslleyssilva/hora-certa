@@ -16,6 +16,13 @@ export default defineConfig(({ mode }) => ({
   build: {
     chunkSizeWarningLimit: 3000,
     target: "es2022",
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'react-pdf': ['@react-pdf/renderer'],
+        },
+      },
+    },
   },
   optimizeDeps: {
     esbuildOptions: {
