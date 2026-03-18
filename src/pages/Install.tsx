@@ -35,7 +35,7 @@ export default function Install() {
               <div>
                 <h3 className="font-semibold text-lg">App já instalado!</h3>
                 <p className="text-muted-foreground text-sm">
-                  O HorasTI já está instalado no seu dispositivo.
+                  O Alvo Ticket já está instalado no seu dispositivo.
                 </p>
               </div>
               <Link to="/login">
