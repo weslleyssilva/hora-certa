@@ -1,7 +1,7 @@
 // Constantes do sistema
 
-export const APP_NAME = "HorasTI";
-export const APP_DESCRIPTION = "Sistema de Controle de Horas de Atendimentos de TI";
+export const APP_NAME = "Alvo Ticket";
+export const APP_DESCRIPTION = "Sistema de Controle de Atendimentos de TI";
 
 // Timezone e locale
 export const TIMEZONE = "America/Sao_Paulo";
