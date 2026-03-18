@@ -21,7 +21,7 @@ export default function Install() {
           <div className="mx-auto mb-4 h-20 w-20 rounded-2xl bg-primary/10 flex items-center justify-center">
             <Smartphone className="h-10 w-10 text-primary" />
           </div>
-          <CardTitle className="text-2xl">Instalar HorasTI</CardTitle>
+          <CardTitle className="text-2xl">Instalar Alvo Ticket</CardTitle>
           <CardDescription>
             Instale o app no seu dispositivo para acesso rápido
           </CardDescription>
