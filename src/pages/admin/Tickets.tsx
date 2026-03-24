@@ -728,7 +728,8 @@ export default function AdminTickets() {
               ) : (
                 <EmptyState
                   title="Nenhum chamado pendente"
-                  description="Todos os chamados foram atendidos!"
+                  description={hasActiveFilters ? "Nenhum atendimento encontrado para os filtros selecionados." : "Todos os chamados foram atendidos!"}
+                  action={hasActiveFilters ? <Button variant="outline" size="sm" onClick={clearFilters}><X className="mr-2 h-4 w-4" />Limpar filtros</Button> : undefined}
                 />
               )}
             </CardContent>
