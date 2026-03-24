@@ -329,15 +329,31 @@ export default function AdminTickets() {
       const matchesClient = !filterClient || t.client_id === filterClient;
       const matchesSearch =
         !searchTerm ||
-        t.requester_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         t.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
         (t.title && t.title.toLowerCase().includes(searchTerm.toLowerCase()));
-      return matchesClient && matchesSearch;
+      const matchesRequester =
+        !searchRequester ||
+        t.requester_name.toLowerCase().includes(searchRequester.toLowerCase());
+      const matchesDateFrom = !dateFrom || t.service_date >= format(dateFrom, "yyyy-MM-dd");
+      const matchesDateTo = !dateTo || t.service_date <= format(dateTo, "yyyy-MM-dd");
+      return matchesClient && matchesSearch && matchesRequester && matchesDateFrom && matchesDateTo;
     });
   };
 
   const filteredPending = filterTickets(pendingTickets);
   const filteredCompleted = filterTickets(completedTickets);
+
+  const hasActiveFilters = !!filterClient || !!searchTerm || !!searchRequester ||
+    format(dateFrom, "yyyy-MM-dd") !== format(startOfMonth(new Date()), "yyyy-MM-dd") ||
+    format(dateTo, "yyyy-MM-dd") !== format(endOfMonth(new Date()), "yyyy-MM-dd");
+
+  const clearFilters = () => {
+    setFilterClient("");
+    setSearchTerm("");
+    setSearchRequester("");
+    setDateFrom(startOfMonth(new Date()));
+    setDateTo(endOfMonth(new Date()));
+  };
 
   const handleExportPDF = () => {
     const params = new URLSearchParams();
