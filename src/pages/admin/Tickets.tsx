@@ -1,4 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
+import { startOfMonth, endOfMonth, format } from "date-fns";
+import { ptBR } from "date-fns/locale";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -14,13 +16,16 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Ticket, Plus, Pencil, Trash2, Search, PlayCircle, CheckCircle, Download } from "lucide-react";
+import { Ticket, Plus, Pencil, Trash2, Search, PlayCircle, CheckCircle, Download, CalendarIcon, X } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { formatDate, formatHours, truncate, calculateBilledHours, calculateDurationMinutes } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { MIN_BILLED_HOURS, TICKET_STATUS, TICKET_STATUS_LABELS, TICKET_STATUS_VARIANTS } from "@/lib/constants";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
 
 interface TicketData {
   id: string;
@@ -72,6 +77,9 @@ export default function AdminTickets() {
   });
   const [filterClient, setFilterClient] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
+  const [searchRequester, setSearchRequester] = useState("");
+  const [dateFrom, setDateFrom] = useState<Date>(startOfMonth(new Date()));
+  const [dateTo, setDateTo] = useState<Date>(endOfMonth(new Date()));
   const [isSaving, setIsSaving] = useState(false);
   const [activeTab, setActiveTab] = useState("pending");
 
@@ -321,15 +329,31 @@ export default function AdminTickets() {
       const matchesClient = !filterClient || t.client_id === filterClient;
       const matchesSearch =
         !searchTerm ||
-        t.requester_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         t.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
         (t.title && t.title.toLowerCase().includes(searchTerm.toLowerCase()));
-      return matchesClient && matchesSearch;
+      const matchesRequester =
+        !searchRequester ||
+        t.requester_name.toLowerCase().includes(searchRequester.toLowerCase());
+      const matchesDateFrom = !dateFrom || t.service_date >= format(dateFrom, "yyyy-MM-dd");
+      const matchesDateTo = !dateTo || t.service_date <= format(dateTo, "yyyy-MM-dd");
+      return matchesClient && matchesSearch && matchesRequester && matchesDateFrom && matchesDateTo;
     });
   };
 
   const filteredPending = filterTickets(pendingTickets);
   const filteredCompleted = filterTickets(completedTickets);
+
+  const hasActiveFilters = !!filterClient || !!searchTerm || !!searchRequester ||
+    format(dateFrom, "yyyy-MM-dd") !== format(startOfMonth(new Date()), "yyyy-MM-dd") ||
+    format(dateTo, "yyyy-MM-dd") !== format(endOfMonth(new Date()), "yyyy-MM-dd");
+
+  const clearFilters = () => {
+    setFilterClient("");
+    setSearchTerm("");
+    setSearchRequester("");
+    setDateFrom(startOfMonth(new Date()));
+    setDateTo(endOfMonth(new Date()));
+  };
 
   const handleExportPDF = () => {
     const params = new URLSearchParams();
@@ -511,13 +535,13 @@ export default function AdminTickets() {
       {/* Filtros */}
       <Card className="mb-6">
         <CardContent className="pt-6">
-          <div className="grid gap-4 md:grid-cols-3">
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
             <div>
               <Label>Buscar</Label>
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
-                  placeholder="Título, solicitante ou descrição..."
+                  placeholder="Título ou descrição..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="pl-9"
@@ -525,13 +549,21 @@ export default function AdminTickets() {
               </div>
             </div>
             <div>
-              <Label>Filtrar por Cliente</Label>
+              <Label>Solicitante</Label>
+              <Input
+                placeholder="Nome do solicitante..."
+                value={searchRequester}
+                onChange={(e) => setSearchRequester(e.target.value)}
+              />
+            </div>
+            <div>
+              <Label>Empresa</Label>
               <Select value={filterClient || "all"} onValueChange={(value) => setFilterClient(value === "all" ? "" : value)}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Todos os clientes" />
+                  <SelectValue placeholder="Todas as empresas" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">Todos os clientes</SelectItem>
+                  <SelectItem value="all">Todas as empresas</SelectItem>
                   {clients.map((client) => (
                     <SelectItem key={client.id} value={client.id}>
                       {client.name}
@@ -540,18 +572,63 @@ export default function AdminTickets() {
                 </SelectContent>
               </Select>
             </div>
-            <div className="flex items-end">
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setFilterClient("");
-                  setSearchTerm("");
-                }}
-              >
-                Limpar Filtros
-              </Button>
+            <div>
+              <Label>De</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn("w-full justify-start text-left font-normal", !dateFrom && "text-muted-foreground")}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {dateFrom ? format(dateFrom, "dd/MM/yyyy") : "Data início"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={dateFrom}
+                    onSelect={(date) => date && setDateFrom(date)}
+                    locale={ptBR}
+                    initialFocus
+                    className="p-3 pointer-events-auto"
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+            <div>
+              <Label>Até</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn("w-full justify-start text-left font-normal", !dateTo && "text-muted-foreground")}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {dateTo ? format(dateTo, "dd/MM/yyyy") : "Data fim"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={dateTo}
+                    onSelect={(date) => date && setDateTo(date)}
+                    locale={ptBR}
+                    initialFocus
+                    className="p-3 pointer-events-auto"
+                  />
+                </PopoverContent>
+              </Popover>
             </div>
           </div>
+          {hasActiveFilters && (
+            <div className="mt-4 flex items-center">
+              <Button variant="ghost" size="sm" onClick={clearFilters}>
+                <X className="mr-2 h-4 w-4" />
+                Limpar filtros
+              </Button>
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -651,7 +728,8 @@ export default function AdminTickets() {
               ) : (
                 <EmptyState
                   title="Nenhum chamado pendente"
-                  description="Todos os chamados foram atendidos!"
+                  description={hasActiveFilters ? "Nenhum atendimento encontrado para os filtros selecionados." : "Todos os chamados foram atendidos!"}
+                  action={hasActiveFilters ? <Button variant="outline" size="sm" onClick={clearFilters}><X className="mr-2 h-4 w-4" />Limpar filtros</Button> : undefined}
                 />
               )}
             </CardContent>
@@ -727,7 +805,8 @@ export default function AdminTickets() {
               ) : (
                 <EmptyState
                   title="Nenhum atendimento concluído"
-                  description="Não há atendimentos finalizados ainda."
+                  description={hasActiveFilters ? "Nenhum atendimento encontrado para os filtros selecionados." : "Não há atendimentos finalizados ainda."}
+                  action={hasActiveFilters ? <Button variant="outline" size="sm" onClick={clearFilters}><X className="mr-2 h-4 w-4" />Limpar filtros</Button> : undefined}
                 />
               )}
             </CardContent>
