@@ -805,7 +805,8 @@ export default function AdminTickets() {
               ) : (
                 <EmptyState
                   title="Nenhum atendimento concluído"
-                  description="Não há atendimentos finalizados ainda."
+                  description={hasActiveFilters ? "Nenhum atendimento encontrado para os filtros selecionados." : "Não há atendimentos finalizados ainda."}
+                  action={hasActiveFilters ? <Button variant="outline" size="sm" onClick={clearFilters}><X className="mr-2 h-4 w-4" />Limpar filtros</Button> : undefined}
                 />
               )}
             </CardContent>
