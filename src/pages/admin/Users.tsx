@@ -178,7 +178,20 @@ export default function AdminUsers() {
   };
 
   const handleDelete = async (id: string) => {
-    toast({ title: "Exclusão de usuários requer acesso ao painel de administração", variant: "destructive" });
+    try {
+      const { data, error } = await supabase.functions.invoke("admin-delete-user", {
+        body: { user_id: id },
+      });
+
+      if (error) throw new Error(error.message || "Erro ao excluir usuário");
+      if (data?.error) throw new Error(data.error);
+
+      toast({ title: "Usuário excluído com sucesso" });
+      loadData();
+    } catch (error: any) {
+      console.error("Error deleting user:", error);
+      toast({ title: error.message || "Erro ao excluir usuário", variant: "destructive" });
+    }
   };
 
   const openPasswordDialog = (profile: Profile) => {
