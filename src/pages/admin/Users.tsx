@@ -12,7 +12,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Users, Plus, Pencil, Key } from "lucide-react";
+import { Users, Plus, Pencil, Key, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { getRoleLabel } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
