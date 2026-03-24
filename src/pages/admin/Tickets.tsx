@@ -77,6 +77,9 @@ export default function AdminTickets() {
   });
   const [filterClient, setFilterClient] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
+  const [searchRequester, setSearchRequester] = useState("");
+  const [dateFrom, setDateFrom] = useState<Date>(startOfMonth(new Date()));
+  const [dateTo, setDateTo] = useState<Date>(endOfMonth(new Date()));
   const [isSaving, setIsSaving] = useState(false);
   const [activeTab, setActiveTab] = useState("pending");
 
