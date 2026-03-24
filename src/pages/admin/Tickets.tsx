@@ -535,13 +535,13 @@ export default function AdminTickets() {
       {/* Filtros */}
       <Card className="mb-6">
         <CardContent className="pt-6">
-          <div className="grid gap-4 md:grid-cols-3">
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
             <div>
               <Label>Buscar</Label>
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
-                  placeholder="Título, solicitante ou descrição..."
+                  placeholder="Título ou descrição..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="pl-9"
@@ -549,13 +549,21 @@ export default function AdminTickets() {
               </div>
             </div>
             <div>
-              <Label>Filtrar por Cliente</Label>
+              <Label>Solicitante</Label>
+              <Input
+                placeholder="Nome do solicitante..."
+                value={searchRequester}
+                onChange={(e) => setSearchRequester(e.target.value)}
+              />
+            </div>
+            <div>
+              <Label>Empresa</Label>
               <Select value={filterClient || "all"} onValueChange={(value) => setFilterClient(value === "all" ? "" : value)}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Todos os clientes" />
+                  <SelectValue placeholder="Todas as empresas" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">Todos os clientes</SelectItem>
+                  <SelectItem value="all">Todas as empresas</SelectItem>
                   {clients.map((client) => (
                     <SelectItem key={client.id} value={client.id}>
                       {client.name}
@@ -564,18 +572,63 @@ export default function AdminTickets() {
                 </SelectContent>
               </Select>
             </div>
-            <div className="flex items-end">
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setFilterClient("");
-                  setSearchTerm("");
-                }}
-              >
-                Limpar Filtros
-              </Button>
+            <div>
+              <Label>De</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn("w-full justify-start text-left font-normal", !dateFrom && "text-muted-foreground")}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {dateFrom ? format(dateFrom, "dd/MM/yyyy") : "Data início"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={dateFrom}
+                    onSelect={(date) => date && setDateFrom(date)}
+                    locale={ptBR}
+                    initialFocus
+                    className="p-3 pointer-events-auto"
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+            <div>
+              <Label>Até</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn("w-full justify-start text-left font-normal", !dateTo && "text-muted-foreground")}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {dateTo ? format(dateTo, "dd/MM/yyyy") : "Data fim"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={dateTo}
+                    onSelect={(date) => date && setDateTo(date)}
+                    locale={ptBR}
+                    initialFocus
+                    className="p-3 pointer-events-auto"
+                  />
+                </PopoverContent>
+              </Popover>
             </div>
           </div>
+          {hasActiveFilters && (
+            <div className="mt-4 flex items-center">
+              <Button variant="ghost" size="sm" onClick={clearFilters}>
+                <X className="mr-2 h-4 w-4" />
+                Limpar filtros
+              </Button>
+            </div>
+          )}
         </CardContent>
       </Card>
 
