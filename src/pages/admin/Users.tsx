@@ -12,7 +12,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Users, Plus, Pencil, Key } from "lucide-react";
+import { Users, Plus, Pencil, Key, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { getRoleLabel } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
@@ -178,7 +178,20 @@ export default function AdminUsers() {
   };
 
   const handleDelete = async (id: string) => {
-    toast({ title: "Exclusão de usuários requer acesso ao painel de administração", variant: "destructive" });
+    try {
+      const { data, error } = await supabase.functions.invoke("admin-delete-user", {
+        body: { user_id: id },
+      });
+
+      if (error) throw new Error(error.message || "Erro ao excluir usuário");
+      if (data?.error) throw new Error(data.error);
+
+      toast({ title: "Usuário excluído com sucesso" });
+      loadData();
+    } catch (error: any) {
+      console.error("Error deleting user:", error);
+      toast({ title: error.message || "Erro ao excluir usuário", variant: "destructive" });
+    }
   };
 
   const openPasswordDialog = (profile: Profile) => {
@@ -370,6 +383,31 @@ export default function AdminUsers() {
                       >
                         <Key className="h-4 w-4" />
                       </Button>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            title="Excluir usuário"
+                          >
+                            <Trash2 className="h-4 w-4 text-destructive" />
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Excluir usuário</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Tem certeza que deseja excluir o usuário <strong>{profile.email}</strong>? Esta ação não pode ser desfeita.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                            <AlertDialogAction onClick={() => handleDelete(profile.id)}>
+                              Excluir
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
                     </TableCell>
                   </TableRow>
                 ))}
