@@ -366,6 +366,7 @@ export default function AdminUsers() {
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead>Nome</TableHead>
                   <TableHead>Email</TableHead>
                   <TableHead>Perfil</TableHead>
                   <TableHead>Cliente</TableHead>
@@ -375,7 +376,8 @@ export default function AdminUsers() {
               <TableBody>
                 {profiles.map((profile) => (
                   <TableRow key={profile.id}>
-                    <TableCell className="font-medium">{profile.email}</TableCell>
+                    <TableCell className="font-medium">{profile.name || "-"}</TableCell>
+                    <TableCell>{profile.email}</TableCell>
                     <TableCell>
                       <StatusBadge status={profile.role === USER_ROLES.ADMIN ? "active" : "inactive"}>
                         {getRoleLabel(profile.role)}
