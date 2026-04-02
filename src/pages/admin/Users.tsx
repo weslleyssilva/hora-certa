@@ -94,6 +94,7 @@ export default function AdminUsers() {
     setFormData({
       email: profile.email,
       password: "",
+      name: profile.name || "",
       role: profile.role,
       client_id: profile.client_id || "",
     });
