@@ -46,6 +46,7 @@ export default function AdminUsers() {
   const [formData, setFormData] = useState({
     email: "",
     password: "",
+    name: "",
     role: USER_ROLES.CLIENT_USER as AppRole,
     client_id: "",
   });
