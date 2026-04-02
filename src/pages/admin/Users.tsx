@@ -22,6 +22,7 @@ import { userCreateSchema, userUpdateSchema, getValidationError } from "@/lib/va
 interface Profile {
   id: string;
   email: string;
+  name: string | null;
   role: AppRole;
   client_id: string | null;
   clients?: { name: string } | null;
@@ -45,6 +46,7 @@ export default function AdminUsers() {
   const [formData, setFormData] = useState({
     email: "",
     password: "",
+    name: "",
     role: USER_ROLES.CLIENT_USER as AppRole,
     client_id: "",
   });
@@ -80,6 +82,7 @@ export default function AdminUsers() {
     setFormData({
       email: "",
       password: "",
+      name: "",
       role: USER_ROLES.CLIENT_USER,
       client_id: "",
     });
@@ -91,6 +94,7 @@ export default function AdminUsers() {
     setFormData({
       email: profile.email,
       password: "",
+      name: profile.name || "",
       role: profile.role,
       client_id: profile.client_id || "",
     });
@@ -127,9 +131,10 @@ export default function AdminUsers() {
     try {
       if (editingProfile) {
         // Atualizar profile existente
-        const { error } = await supabase
+         const { error } = await supabase
           .from("profiles")
           .update({
+            name: formData.name.trim() || null,
             role: formData.role,
             client_id: formData.role === USER_ROLES.CLIENT_USER ? formData.client_id : null,
           })
@@ -144,10 +149,11 @@ export default function AdminUsers() {
         toast({ title: "Usuário atualizado com sucesso" });
       } else {
          // Criar novo usuário via edge function segura
-         const { data, error } = await supabase.functions.invoke("admin-create-user", {
+          const { data, error } = await supabase.functions.invoke("admin-create-user", {
            body: {
              email: formData.email.trim(),
              password: formData.password,
+             name: formData.name.trim() || null,
              role: formData.role,
              client_id: formData.role === USER_ROLES.CLIENT_USER ? formData.client_id : null,
            },
@@ -271,6 +277,16 @@ export default function AdminUsers() {
             </DialogHeader>
             <div className="space-y-4 py-4">
               <div className="space-y-2">
+                <Label htmlFor="name">Nome</Label>
+                <Input
+                  id="name"
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  placeholder="Nome do usuário"
+                  maxLength={255}
+                />
+              </div>
+              <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
                 <Input
                   id="email"
@@ -350,6 +366,7 @@ export default function AdminUsers() {
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead>Nome</TableHead>
                   <TableHead>Email</TableHead>
                   <TableHead>Perfil</TableHead>
                   <TableHead>Cliente</TableHead>
@@ -359,7 +376,8 @@ export default function AdminUsers() {
               <TableBody>
                 {profiles.map((profile) => (
                   <TableRow key={profile.id}>
-                    <TableCell className="font-medium">{profile.email}</TableCell>
+                    <TableCell className="font-medium">{profile.name || "-"}</TableCell>
+                    <TableCell>{profile.email}</TableCell>
                     <TableCell>
                       <StatusBadge status={profile.role === USER_ROLES.ADMIN ? "active" : "inactive"}>
                         {getRoleLabel(profile.role)}
