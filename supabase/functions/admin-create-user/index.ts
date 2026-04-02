@@ -138,14 +138,15 @@ interface CreateUserRequest {
  
      console.log(`[admin-create-user] User created: ${newUserId}`);
  
-     // Update profile with correct role and client_id
-     const { error: profileError } = await adminClient
-       .from("profiles")
-       .update({
-         role: body.role,
-         client_id: body.role === "CLIENT_USER" ? body.client_id : null,
-       })
-       .eq("id", newUserId);
+      // Update profile with correct role, client_id and name
+      const { error: profileError } = await adminClient
+        .from("profiles")
+        .update({
+          role: body.role,
+          client_id: body.role === "CLIENT_USER" ? body.client_id : null,
+          name: body.name?.trim() || null,
+        })
+        .eq("id", newUserId);
  
      if (profileError) {
        console.error("[admin-create-user] Profile update error:", profileError);

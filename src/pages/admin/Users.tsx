@@ -149,10 +149,11 @@ export default function AdminUsers() {
         toast({ title: "Usuário atualizado com sucesso" });
       } else {
          // Criar novo usuário via edge function segura
-         const { data, error } = await supabase.functions.invoke("admin-create-user", {
+          const { data, error } = await supabase.functions.invoke("admin-create-user", {
            body: {
              email: formData.email.trim(),
              password: formData.password,
+             name: formData.name.trim() || null,
              role: formData.role,
              client_id: formData.role === USER_ROLES.CLIENT_USER ? formData.client_id : null,
            },
