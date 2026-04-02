@@ -22,6 +22,7 @@ import { userCreateSchema, userUpdateSchema, getValidationError } from "@/lib/va
 interface Profile {
   id: string;
   email: string;
+  name: string | null;
   role: AppRole;
   client_id: string | null;
   clients?: { name: string } | null;
