@@ -6,12 +6,13 @@
      "authorization, x-client-info, apikey, content-type",
  };
  
- interface CreateUserRequest {
-   email: string;
-   password: string;
-   role: "ADMIN" | "CLIENT_USER";
-   client_id: string | null;
- }
+interface CreateUserRequest {
+  email: string;
+  password: string;
+  role: "ADMIN" | "CLIENT_USER";
+  client_id: string | null;
+  name: string | null;
+}
  
  Deno.serve(async (req) => {
    // Handle CORS preflight
