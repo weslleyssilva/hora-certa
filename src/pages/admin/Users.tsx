@@ -131,9 +131,10 @@ export default function AdminUsers() {
     try {
       if (editingProfile) {
         // Atualizar profile existente
-        const { error } = await supabase
+         const { error } = await supabase
           .from("profiles")
           .update({
+            name: formData.name.trim() || null,
             role: formData.role,
             client_id: formData.role === USER_ROLES.CLIENT_USER ? formData.client_id : null,
           })
