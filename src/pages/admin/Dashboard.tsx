@@ -7,6 +7,7 @@ import { PageHeader } from "@/components/layout/PageHeader";
 import { KPICard } from "@/components/ui/kpi-card";
 import { AreaChart } from "@/components/charts/AreaChart";
 import { HorizontalBarChart } from "@/components/charts/HorizontalBarChart";
+import { CategoryDonutChart } from "@/components/charts/CategoryDonutChart";
 import { PeriodFilter, Period } from "@/components/filters/PeriodFilter";
 import { ClientSelector } from "@/components/filters/ClientSelector";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -53,6 +54,7 @@ export default function AdminDashboard() {
   const [hoursByClient, setHoursByClient] = useState<DataPoint[]>([]);
   const [ticketsByClient, setTicketsByClient] = useState<DataPoint[]>([]);
   const [consumptionByDay, setConsumptionByDay] = useState<DataPoint[]>([]);
+  const [hoursByCategory, setHoursByCategory] = useState<{ category: string; hours: number }[]>([]);
   const [expiringContracts, setExpiringContracts] = useState<ExpiringContract[]>([]);
 
   useEffect(() => {
@@ -70,7 +72,7 @@ export default function AdminDashboard() {
       // Build tickets query
       let ticketsQuery = supabase
         .from("tickets")
-        .select("id, service_date, billed_hours, client_id")
+        .select("id, service_date, billed_hours, client_id, category")
         .gte("service_date", startStr)
         .lte("service_date", endStr);
 
@@ -97,6 +99,16 @@ export default function AdminDashboard() {
             name: format(parseISO(d), "dd/MM", { locale: ptBR }),
             value: byDay[d],
           }))
+        );
+
+        // Aggregate by category
+        const byCat: Record<string, number> = {};
+        tickets.forEach((t: any) => {
+          const cat = t.category || "suporte";
+          byCat[cat] = (byCat[cat] || 0) + t.billed_hours;
+        });
+        setHoursByCategory(
+          Object.entries(byCat).map(([category, hours]) => ({ category, hours }))
         );
 
         // Aggregate by client (only if not filtering by client)
