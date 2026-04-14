@@ -51,3 +51,24 @@ export const USER_ROLES = {
 export type AppRole = typeof USER_ROLES[keyof typeof USER_ROLES];
 export type ClientStatus = typeof CLIENT_STATUS[keyof typeof CLIENT_STATUS];
 export type TicketStatus = typeof TICKET_STATUS[keyof typeof TICKET_STATUS];
+
+// Categorias de ticket
+export const TICKET_CATEGORIES = {
+  suporte: 'Suporte',
+  desenvolvimento: 'Desenvolvimento',
+  reuniao: 'Reunião',
+  consultoria: 'Consultoria',
+  infraestrutura: 'Infraestrutura',
+  outro: 'Outro',
+} as const;
+
+export type TicketCategory = keyof typeof TICKET_CATEGORIES;
+
+export const TICKET_CATEGORY_COLORS: Record<TicketCategory, string> = {
+  suporte: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300',
+  desenvolvimento: 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300',
+  reuniao: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300',
+  consultoria: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300',
+  infraestrutura: 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-300',
+  outro: 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300',
+};

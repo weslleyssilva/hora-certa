@@ -11,14 +11,16 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Ticket, Search, Eye, Plus, Download } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { formatDate, formatTime, formatHours, truncate } from "@/lib/utils";
-import { TICKET_STATUS, TICKET_STATUS_LABELS, TICKET_STATUS_VARIANTS } from "@/lib/constants";
+import { TICKET_STATUS, TICKET_STATUS_LABELS, TICKET_STATUS_VARIANTS, TICKET_CATEGORIES, TICKET_CATEGORY_COLORS, TicketCategory } from "@/lib/constants";
 import { toast } from "@/hooks/use-toast";
- import { clientTicketSchema, getValidationError } from "@/lib/validations";
+import { clientTicketSchema, getValidationError } from "@/lib/validations";
+import { cn } from "@/lib/utils";
 
 interface TicketData {
   id: string;
@@ -31,6 +33,7 @@ interface TicketData {
   billed_hours: number;
   description: string;
   status: string;
+  category: string | null;
 }
 
 export default function ClientTickets() {
@@ -42,6 +45,7 @@ export default function ClientTickets() {
   const [searchTerm, setSearchTerm] = useState("");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
+  const [filterCategory, setFilterCategory] = useState("");
   const [selectedTicket, setSelectedTicket] = useState<TicketData | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
@@ -49,6 +53,7 @@ export default function ClientTickets() {
   const [formData, setFormData] = useState({
     title: "",
     description: "",
+    category: "suporte",
   });
 
   useEffect(() => {
@@ -59,7 +64,7 @@ export default function ClientTickets() {
 
   useEffect(() => {
     filterTickets();
-  }, [tickets, searchTerm, startDate, endDate]);
+  }, [tickets, searchTerm, startDate, endDate, filterCategory]);
 
   const loadTickets = async () => {
     if (!profile?.client_id) return;
@@ -101,6 +106,10 @@ export default function ClientTickets() {
       result = result.filter((t) => t.service_date <= endDate);
     }
 
+    if (filterCategory) {
+      result = result.filter((t) => t.category === filterCategory);
+    }
+
     setFilteredTickets(result);
   };
 
@@ -108,22 +117,22 @@ export default function ClientTickets() {
     setSearchTerm("");
     setStartDate("");
     setEndDate("");
+    setFilterCategory("");
   };
 
   const openCreateDialog = () => {
-    setFormData({ title: "", description: "" });
+    setFormData({ title: "", description: "", category: "suporte" });
     setIsCreateDialogOpen(true);
   };
 
   const handleCreateTicket = async () => {
-     // Validation
-     const result = clientTicketSchema.safeParse({
-       title: formData.title.trim(),
-       description: formData.description.trim(),
-     });
-     const error = getValidationError(result);
-     if (error) {
-       toast({ title: error, variant: "destructive" });
+    const result = clientTicketSchema.safeParse({
+      title: formData.title.trim(),
+      description: formData.description.trim(),
+    });
+    const error = getValidationError(result);
+    if (error) {
+      toast({ title: error, variant: "destructive" });
       return;
     }
 
@@ -137,12 +146,13 @@ export default function ClientTickets() {
       const { error } = await supabase.from("tickets").insert({
         client_id: profile.client_id,
         created_by_user_id: user.id,
-         title: formData.title.trim(),
-         description: formData.description.trim(),
+        title: formData.title.trim(),
+        description: formData.description.trim(),
         requester_name: profile.email,
         service_date: new Date().toISOString().split("T")[0],
         billed_hours: 0,
         status: TICKET_STATUS.OPEN,
+        category: formData.category,
       });
 
       if (error) throw error;
@@ -160,6 +170,15 @@ export default function ClientTickets() {
 
   const getStatusBadgeVariant = (status: string) => {
     return TICKET_STATUS_VARIANTS[status] || "default";
+  };
+
+  const CategoryBadge = ({ category }: { category: string | null }) => {
+    const cat = (category || "suporte") as TicketCategory;
+    return (
+      <span className={cn("inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold", TICKET_CATEGORY_COLORS[cat] || TICKET_CATEGORY_COLORS.outro)}>
+        {TICKET_CATEGORIES[cat] || category}
+      </span>
+    );
   };
 
   if (isLoading) return <AppLayout><PageLoader /></AppLayout>;
@@ -224,7 +243,7 @@ export default function ClientTickets() {
       {/* Filtros */}
       <Card className="mb-6">
         <CardContent className="pt-6">
-          <div className="grid gap-4 md:grid-cols-4">
+          <div className="grid gap-4 md:grid-cols-5">
             <div>
               <Label htmlFor="search">Buscar</Label>
               <div className="relative">
@@ -237,6 +256,20 @@ export default function ClientTickets() {
                   className="pl-9"
                 />
               </div>
+            </div>
+            <div>
+              <Label>Categoria</Label>
+              <Select value={filterCategory || "all"} onValueChange={(value) => setFilterCategory(value === "all" ? "" : value)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Todas" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todas</SelectItem>
+                  {Object.entries(TICKET_CATEGORIES).map(([key, label]) => (
+                    <SelectItem key={key} value={key}>{label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div>
               <Label htmlFor="startDate">Data Início</Label>
@@ -280,6 +313,7 @@ export default function ClientTickets() {
                 <TableRow>
                   <TableHead>Data</TableHead>
                   <TableHead>Título</TableHead>
+                  <TableHead>Categoria</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Horas</TableHead>
                   <TableHead>Descrição</TableHead>
@@ -293,6 +327,7 @@ export default function ClientTickets() {
                       {formatDate(ticket.service_date)}
                     </TableCell>
                     <TableCell>{ticket.title || "-"}</TableCell>
+                    <TableCell><CategoryBadge category={ticket.category} /></TableCell>
                     <TableCell>
                       <StatusBadge variant={getStatusBadgeVariant(ticket.status)}>
                         {TICKET_STATUS_LABELS[ticket.status] || ticket.status}
@@ -345,6 +380,12 @@ export default function ClientTickets() {
                                 <div>
                                   <Label className="text-muted-foreground">Solicitante</Label>
                                   <p className="font-medium">{selectedTicket.requester_name}</p>
+                                </div>
+                              </div>
+                              <div>
+                                <Label className="text-muted-foreground">Categoria</Label>
+                                <div className="mt-1">
+                                  <CategoryBadge category={selectedTicket.category} />
                                 </div>
                               </div>
                               {selectedTicket.status === TICKET_STATUS.COMPLETED && (
@@ -423,8 +464,21 @@ export default function ClientTickets() {
                 value={formData.title}
                 onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                 placeholder="Resumo do problema ou solicitação"
-                 maxLength={200}
+                maxLength={200}
               />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="category">Categoria *</Label>
+              <Select value={formData.category} onValueChange={(value) => setFormData({ ...formData, category: value })}>
+                <SelectTrigger id="category">
+                  <SelectValue placeholder="Selecione a categoria" />
+                </SelectTrigger>
+                <SelectContent>
+                  {Object.entries(TICKET_CATEGORIES).map(([key, label]) => (
+                    <SelectItem key={key} value={key}>{label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-2">
               <Label htmlFor="description">Descrição *</Label>
@@ -434,7 +488,7 @@ export default function ClientTickets() {
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                 placeholder="Descreva detalhadamente o problema ou solicitação..."
                 rows={6}
-                 maxLength={5000}
+                maxLength={5000}
               />
             </div>
           </div>

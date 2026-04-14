@@ -14,10 +14,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "@/hooks/use-toast";
-import { TICKET_STATUS, MIN_BILLED_HOURS } from "@/lib/constants";
+import { TICKET_STATUS, MIN_BILLED_HOURS, TICKET_CATEGORIES } from "@/lib/constants";
 import { calculateBilledHours } from "@/lib/utils";
 
 const createTicketSchema = z.object({
@@ -25,6 +26,7 @@ const createTicketSchema = z.object({
   service_date: z.string().min(1, "Data é obrigatória"),
   description: z.string().min(1, "Descrição é obrigatória").max(2000),
   duration_minutes: z.string().optional(),
+  category: z.string().min(1, "Categoria é obrigatória"),
 });
 
 type CreateTicketFormData = z.infer<typeof createTicketSchema>;
@@ -48,6 +50,7 @@ export function CreateTicketModal({
     handleSubmit,
     reset,
     watch,
+    setValue,
     formState: { errors },
   } = useForm<CreateTicketFormData>({
     resolver: zodResolver(createTicketSchema),
@@ -56,6 +59,7 @@ export function CreateTicketModal({
       service_date: new Date().toISOString().split("T")[0],
       description: "",
       duration_minutes: "",
+      category: "suporte",
     },
   });
 
@@ -72,9 +76,7 @@ export function CreateTicketModal({
 
     setIsSaving(true);
     try {
-      // Calculate billed_hours: default to 0 for open tickets (admin will set on completion)
-      // If duration_minutes is provided, calculate the hours for reference
-      const billedHours = 0; // Open tickets start with 0, admin sets final value
+      const billedHours = 0;
 
       const { error } = await supabase.from("tickets").insert({
         client_id: profile.client_id,
@@ -86,6 +88,7 @@ export function CreateTicketModal({
         duration_minutes: data.duration_minutes ? parseInt(data.duration_minutes) : null,
         billed_hours: billedHours,
         status: TICKET_STATUS.OPEN,
+        category: data.category,
       });
 
       if (error) throw error;
@@ -145,6 +148,27 @@ export function CreateTicketModal({
                   </p>
                 )}
               </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="category">Categoria *</Label>
+              <Select
+                defaultValue="suporte"
+                onValueChange={(value) => setValue("category", value)}
+              >
+                <SelectTrigger id="category">
+                  <SelectValue placeholder="Selecione a categoria" />
+                </SelectTrigger>
+                <SelectContent>
+                  {Object.entries(TICKET_CATEGORIES).map(([key, label]) => (
+                    <SelectItem key={key} value={key}>{label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {errors.category && (
+                <p className="text-sm text-destructive">
+                  {errors.category.message}
+                </p>
+              )}
             </div>
             <div className="space-y-2">
               <Label htmlFor="description">Descrição *</Label>

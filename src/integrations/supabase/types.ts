@@ -194,6 +194,7 @@ export type Database = {
       tickets: {
         Row: {
           billed_hours: number
+          category: string | null
           client_id: string
           created_at: string
           created_by_user_id: string
@@ -210,6 +211,7 @@ export type Database = {
         }
         Insert: {
           billed_hours: number
+          category?: string | null
           client_id: string
           created_at?: string
           created_by_user_id: string
@@ -226,6 +228,7 @@ export type Database = {
         }
         Update: {
           billed_hours?: number
+          category?: string | null
           client_id?: string
           created_at?: string
           created_by_user_id?: string

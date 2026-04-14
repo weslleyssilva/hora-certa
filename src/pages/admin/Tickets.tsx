@@ -22,10 +22,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { formatDate, formatHours, truncate, calculateBilledHours, calculateDurationMinutes } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
-import { MIN_BILLED_HOURS, TICKET_STATUS, TICKET_STATUS_LABELS, TICKET_STATUS_VARIANTS } from "@/lib/constants";
+import { MIN_BILLED_HOURS, TICKET_STATUS, TICKET_STATUS_LABELS, TICKET_STATUS_VARIANTS, TICKET_CATEGORIES, TICKET_CATEGORY_COLORS, TicketCategory } from "@/lib/constants";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
+import { Badge } from "@/components/ui/badge";
 
 interface TicketData {
   id: string;
@@ -39,6 +40,7 @@ interface TicketData {
   description: string;
   billed_hours: number;
   status: string;
+  category: string | null;
   clients?: { name: string } | null;
 }
 
@@ -66,6 +68,7 @@ export default function AdminTickets() {
     duration_minutes: "",
     description: "",
     billed_hours: "",
+    category: "suporte",
   });
   const [attendFormData, setAttendFormData] = useState({
     service_date: "",
@@ -74,8 +77,10 @@ export default function AdminTickets() {
     duration_minutes: "",
     billed_hours: "",
     description: "",
+    category: "suporte",
   });
   const [filterClient, setFilterClient] = useState("");
+  const [filterCategory, setFilterCategory] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [searchRequester, setSearchRequester] = useState("");
   const [dateFrom, setDateFrom] = useState<Date>(startOfMonth(new Date()));
@@ -87,7 +92,6 @@ export default function AdminTickets() {
     loadData();
   }, []);
 
-  // Recalcular horas automaticamente para formulário de criação
   useEffect(() => {
     if (formData.start_time && formData.end_time) {
       const minutes = calculateDurationMinutes(formData.start_time, formData.end_time);
@@ -109,7 +113,6 @@ export default function AdminTickets() {
     }
   }, [formData.start_time, formData.end_time, formData.duration_minutes]);
 
-  // Recalcular horas automaticamente para formulário de atendimento
   useEffect(() => {
     if (attendFormData.start_time && attendFormData.end_time) {
       const minutes = calculateDurationMinutes(attendFormData.start_time, attendFormData.end_time);
@@ -162,6 +165,7 @@ export default function AdminTickets() {
       duration_minutes: "",
       description: "",
       billed_hours: MIN_BILLED_HOURS.toString(),
+      category: "suporte",
     });
     setIsDialogOpen(true);
   };
@@ -177,6 +181,7 @@ export default function AdminTickets() {
       duration_minutes: ticket.duration_minutes?.toString() || "",
       description: ticket.description,
       billed_hours: ticket.billed_hours.toString(),
+      category: ticket.category || "suporte",
     });
     setIsDialogOpen(true);
   };
@@ -190,6 +195,7 @@ export default function AdminTickets() {
       duration_minutes: "",
       billed_hours: MIN_BILLED_HOURS.toString(),
       description: ticket.description,
+      category: ticket.category || "suporte",
     });
     setIsAttendDialogOpen(true);
   };
@@ -224,6 +230,7 @@ export default function AdminTickets() {
         billed_hours: billedHours,
         created_by_user_id: user?.id,
         status: TICKET_STATUS.COMPLETED,
+        category: formData.category,
       };
 
       if (editingTicket) {
@@ -274,6 +281,7 @@ export default function AdminTickets() {
           duration_minutes: attendFormData.duration_minutes ? parseInt(attendFormData.duration_minutes) : null,
           billed_hours: billedHours,
           description: attendFormData.description,
+          category: attendFormData.category,
         })
         .eq("id", attendingTicket.id);
 
@@ -327,6 +335,7 @@ export default function AdminTickets() {
   const filterTickets = (list: TicketData[]) => {
     return list.filter((t) => {
       const matchesClient = !filterClient || t.client_id === filterClient;
+      const matchesCategory = !filterCategory || t.category === filterCategory;
       const matchesSearch =
         !searchTerm ||
         t.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -336,19 +345,20 @@ export default function AdminTickets() {
         t.requester_name.toLowerCase().includes(searchRequester.toLowerCase());
       const matchesDateFrom = !dateFrom || t.service_date >= format(dateFrom, "yyyy-MM-dd");
       const matchesDateTo = !dateTo || t.service_date <= format(dateTo, "yyyy-MM-dd");
-      return matchesClient && matchesSearch && matchesRequester && matchesDateFrom && matchesDateTo;
+      return matchesClient && matchesCategory && matchesSearch && matchesRequester && matchesDateFrom && matchesDateTo;
     });
   };
 
   const filteredPending = filterTickets(pendingTickets);
   const filteredCompleted = filterTickets(completedTickets);
 
-  const hasActiveFilters = !!filterClient || !!searchTerm || !!searchRequester ||
+  const hasActiveFilters = !!filterClient || !!filterCategory || !!searchTerm || !!searchRequester ||
     format(dateFrom, "yyyy-MM-dd") !== format(startOfMonth(new Date()), "yyyy-MM-dd") ||
     format(dateTo, "yyyy-MM-dd") !== format(endOfMonth(new Date()), "yyyy-MM-dd");
 
   const clearFilters = () => {
     setFilterClient("");
+    setFilterCategory("");
     setSearchTerm("");
     setSearchRequester("");
     setDateFrom(startOfMonth(new Date()));
@@ -361,6 +371,28 @@ export default function AdminTickets() {
     if (searchTerm) params.set("search", searchTerm);
     navigate(`/reports/tickets?${params.toString()}`);
   };
+
+  const CategoryBadge = ({ category }: { category: string | null }) => {
+    const cat = (category || "suporte") as TicketCategory;
+    return (
+      <span className={cn("inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold", TICKET_CATEGORY_COLORS[cat] || TICKET_CATEGORY_COLORS.outro)}>
+        {TICKET_CATEGORIES[cat] || category}
+      </span>
+    );
+  };
+
+  const CategorySelect = ({ value, onChange, id }: { value: string; onChange: (v: string) => void; id?: string }) => (
+    <Select value={value} onValueChange={onChange}>
+      <SelectTrigger id={id}>
+        <SelectValue placeholder="Selecione a categoria" />
+      </SelectTrigger>
+      <SelectContent>
+        {Object.entries(TICKET_CATEGORIES).map(([key, label]) => (
+          <SelectItem key={key} value={key}>{label}</SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  );
 
   if (isLoading) return <AppLayout><PageLoader /></AppLayout>;
 
@@ -427,6 +459,14 @@ export default function AdminTickets() {
                     onChange={(e) => setFormData({ ...formData, service_date: e.target.value })}
                   />
                 </div>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="category">Categoria *</Label>
+                <CategorySelect
+                  id="category"
+                  value={formData.category}
+                  onChange={(value) => setFormData({ ...formData, category: value })}
+                />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
@@ -535,7 +575,7 @@ export default function AdminTickets() {
       {/* Filtros */}
       <Card className="mb-6">
         <CardContent className="pt-6">
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-6">
             <div>
               <Label>Buscar</Label>
               <div className="relative">
@@ -568,6 +608,20 @@ export default function AdminTickets() {
                     <SelectItem key={client.id} value={client.id}>
                       {client.name}
                     </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>Categoria</Label>
+              <Select value={filterCategory || "all"} onValueChange={(value) => setFilterCategory(value === "all" ? "" : value)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Todas" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todas</SelectItem>
+                  {Object.entries(TICKET_CATEGORIES).map(([key, label]) => (
+                    <SelectItem key={key} value={key}>{label}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -660,6 +714,7 @@ export default function AdminTickets() {
                       <TableHead>Cliente</TableHead>
                       <TableHead>Título</TableHead>
                       <TableHead>Solicitante</TableHead>
+                      <TableHead>Categoria</TableHead>
                       <TableHead>Status</TableHead>
                       <TableHead className="text-right">Ações</TableHead>
                     </TableRow>
@@ -673,6 +728,7 @@ export default function AdminTickets() {
                         <TableCell>{ticket.clients?.name || "N/A"}</TableCell>
                         <TableCell>{ticket.title || "-"}</TableCell>
                         <TableCell>{ticket.requester_name}</TableCell>
+                        <TableCell><CategoryBadge category={ticket.category} /></TableCell>
                         <TableCell>
                           <StatusBadge variant={getStatusBadgeVariant(ticket.status)}>
                             {TICKET_STATUS_LABELS[ticket.status] || ticket.status}
@@ -749,6 +805,7 @@ export default function AdminTickets() {
                       <TableHead>Data</TableHead>
                       <TableHead>Cliente</TableHead>
                       <TableHead>Solicitante</TableHead>
+                      <TableHead>Categoria</TableHead>
                       <TableHead>Horas</TableHead>
                       <TableHead>Descrição</TableHead>
                       <TableHead className="text-right">Ações</TableHead>
@@ -762,6 +819,7 @@ export default function AdminTickets() {
                         </TableCell>
                         <TableCell>{ticket.clients?.name || "N/A"}</TableCell>
                         <TableCell>{ticket.requester_name}</TableCell>
+                        <TableCell><CategoryBadge category={ticket.category} /></TableCell>
                         <TableCell>{formatHours(ticket.billed_hours)}</TableCell>
                         <TableCell className="max-w-[200px]">
                           {truncate(ticket.description, 50)}
@@ -833,6 +891,14 @@ export default function AdminTickets() {
                 type="date"
                 value={attendFormData.service_date}
                 onChange={(e) => setAttendFormData({ ...attendFormData, service_date: e.target.value })}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="attend_category">Categoria *</Label>
+              <CategorySelect
+                id="attend_category"
+                value={attendFormData.category}
+                onChange={(value) => setAttendFormData({ ...attendFormData, category: value })}
               />
             </div>
             <div className="grid grid-cols-2 gap-4">
