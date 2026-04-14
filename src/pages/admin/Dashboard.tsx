@@ -272,6 +272,11 @@ export default function AdminDashboard() {
               height={320}
             />
           )}
+          <CategoryDonutChart
+            title="Horas por Categoria"
+            description="Distribuição por tipo de atendimento"
+            data={hoursByCategory}
+          />
           <AreaChart
             title="Evolução do Consumo"
             description="Horas consumidas ao longo do período"
