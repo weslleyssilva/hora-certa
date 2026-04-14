@@ -1,0 +1,1 @@
+ALTER TABLE public.tickets ADD COLUMN category TEXT CHECK (category IN ('suporte', 'desenvolvimento', 'reuniao', 'consultoria', 'infraestrutura', 'outro')) DEFAULT 'suporte';
