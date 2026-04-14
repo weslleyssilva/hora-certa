@@ -406,6 +406,13 @@ export default function ClientDashboard() {
           />
         </div>
 
+        {/* Category distribution */}
+        <CategoryDonutChart
+          title="Horas por Categoria"
+          description="Distribuição por tipo de atendimento no período"
+          data={hoursByCategory}
+        />
+
         {/* Top Requesters */}
         {topRequesters.length > 0 && (
           <HorizontalBarChart
