@@ -9,6 +9,7 @@ import { AreaChart } from "@/components/charts/AreaChart";
 import { BarChart } from "@/components/charts/BarChart";
 import { HorizontalBarChart } from "@/components/charts/HorizontalBarChart";
 import { DonutChart } from "@/components/charts/DonutChart";
+import { CategoryDonutChart } from "@/components/charts/CategoryDonutChart";
 import { PeriodFilter, Period } from "@/components/filters/PeriodFilter";
 import { CreateTicketModal } from "@/components/tickets/CreateTicketModal";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -72,6 +73,7 @@ export default function ClientDashboard() {
   const [recentTickets, setRecentTickets] = useState<TicketData[]>([]);
   const [openTickets, setOpenTickets] = useState<TicketData[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
+  const [hoursByCategory, setHoursByCategory] = useState<{ category: string; hours: number }[]>([]);
 
   const contractPeriod = useMemo(() => {
     if (!contract) return undefined;
@@ -149,7 +151,7 @@ export default function ClientDashboard() {
 
       const { data: tickets } = await supabase
         .from("tickets")
-        .select("id, service_date, requester_name, description, billed_hours, status, title, created_at")
+        .select("id, service_date, requester_name, description, billed_hours, status, title, created_at, category")
         .eq("client_id", profile.client_id)
         .gte("service_date", startStr)
         .lte("service_date", endStr)
@@ -194,6 +196,16 @@ export default function ClientDashboard() {
             .map(([name, value]) => ({ name, value }))
             .sort((a, b) => b.value - a.value)
             .slice(0, 5)
+        );
+
+        // Aggregate by category
+        const byCat: Record<string, number> = {};
+        tickets.forEach((t: any) => {
+          const cat = t.category || "suporte";
+          byCat[cat] = (byCat[cat] || 0) + t.billed_hours;
+        });
+        setHoursByCategory(
+          Object.entries(byCat).map(([category, hours]) => ({ category, hours }))
         );
       }
 
