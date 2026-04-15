@@ -169,7 +169,7 @@ export default function Machines() {
       {loading ? (
         <PageLoader />
       ) : filtered.length === 0 ? (
-        <EmptyState icon={Monitor} title="Nenhuma máquina encontrada" description="Cadastre uma máquina para começar" />
+        <EmptyState icon={<Monitor className="h-6 w-6 text-muted-foreground" />} title="Nenhuma máquina encontrada" description="Cadastre uma máquina para começar" />
       ) : (
         <Card>
           <CardContent className="p-0">

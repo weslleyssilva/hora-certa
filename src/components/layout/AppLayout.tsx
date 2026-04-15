@@ -8,6 +8,7 @@ import {
   Package,
   LogOut,
   Clock,
+  Monitor,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
@@ -36,12 +37,14 @@ const adminMenuItems = [
   { title: "Contratos", url: "/admin/contracts", icon: FileText },
   { title: "Atendimentos", url: "/admin/tickets", icon: Ticket },
   { title: "Produtos", url: "/admin/products", icon: Package },
+  { title: "Diagnósticos", url: "/diagnostics/machines", icon: Monitor },
 ];
 
 const clientMenuItems = [
   { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
   { title: "Chamados", url: "/tickets", icon: Ticket },
   { title: "Produtos", url: "/products", icon: Package },
+  { title: "Diagnósticos", url: "/diagnostics/machines", icon: Monitor },
 ];
 
 function AppSidebarContent() {

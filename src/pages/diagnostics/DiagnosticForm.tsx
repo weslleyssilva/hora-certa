@@ -282,7 +282,7 @@ export default function DiagnosticForm() {
             ) : loadingHistory ? (
               <PageLoader />
             ) : history.length === 0 ? (
-              <EmptyState icon={Stethoscope} title="Sem diagnósticos" description="Nenhum diagnóstico registrado para esta máquina" />
+              <EmptyState icon={<Stethoscope className="h-6 w-6 text-muted-foreground" />} title="Sem diagnósticos" description="Nenhum diagnóstico registrado para esta máquina" />
             ) : (
               <Table>
                 <TableHeader>

@@ -28,6 +28,10 @@ import AdminProducts from "./pages/admin/Products";
 // Reports
 import TicketsReport from "./pages/reports/TicketsReport";
 
+// Diagnostics
+import DiagnosticsMachines from "./pages/diagnostics/Machines";
+import DiagnosticForm from "./pages/diagnostics/DiagnosticForm";
+
 // PWA
 import Install from "./pages/Install";
 
@@ -99,6 +103,18 @@ function AppRoutes() {
       <Route path="/admin/products" element={
         <ProtectedRoute requireAdmin>
           <AdminProducts />
+        </ProtectedRoute>
+      } />
+
+      {/* Diagnostics */}
+      <Route path="/diagnostics/machines" element={
+        <ProtectedRoute>
+          <DiagnosticsMachines />
+        </ProtectedRoute>
+      } />
+      <Route path="/diagnostics/new" element={
+        <ProtectedRoute>
+          <DiagnosticForm />
         </ProtectedRoute>
       } />
 
