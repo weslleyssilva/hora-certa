@@ -5,7 +5,6 @@ import { PageHeader } from "@/components/layout/PageHeader";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -37,14 +36,30 @@ interface DiagnosticRow {
   created_at: string;
 }
 
+interface TestRow {
+  disco_ok: boolean;
+  ram_ok: boolean;
+  sistema_ok: boolean;
+  temperatura: string | null;
+  antivirus: boolean;
+  atualizacoes: boolean;
+  observacoes: string | null;
+}
+
 const STATUS_COLORS: Record<string, string> = {
-  OK: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400",
-  "Atenção": "bg-yellow-500/15 text-yellow-700 dark:text-yellow-400",
-  "Crítico": "bg-red-500/15 text-red-700 dark:text-red-400",
+  OK: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border-emerald-500/30",
+  "Atenção": "bg-yellow-500/15 text-yellow-700 dark:text-yellow-400 border-yellow-500/30",
+  "Crítico": "bg-red-500/15 text-red-700 dark:text-red-400 border-red-500/30",
+};
+
+const TEMP_COLORS: Record<string, string> = {
+  Normal: "text-emerald-600",
+  Alta: "text-yellow-600",
+  "Crítica": "text-red-600",
 };
 
 export default function DiagnosticForm() {
-  const { user, isAdmin } = useAuth();
+  const { user } = useAuth();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const machineIdParam = searchParams.get("machine");
@@ -61,6 +76,9 @@ export default function DiagnosticForm() {
   const [discoOk, setDiscoOk] = useState(false);
   const [ramOk, setRamOk] = useState(false);
   const [sistemaOk, setSistemaOk] = useState(false);
+  const [temperatura, setTemperatura] = useState("Normal");
+  const [antivirus, setAntivirus] = useState(false);
+  const [atualizacoes, setAtualizacoes] = useState(false);
   const [testObs, setTestObs] = useState("");
 
   // History
@@ -69,24 +87,21 @@ export default function DiagnosticForm() {
 
   // Detail dialog
   const [detailDiag, setDetailDiag] = useState<DiagnosticRow | null>(null);
-  const [detailTests, setDetailTests] = useState<any[]>([]);
+  const [detailTests, setDetailTests] = useState<TestRow[]>([]);
 
   const fetchMachines = async () => {
-    const { data, error } = await supabase.from("machines").select("id, nome, usuario, setor, client_id").order("nome");
-    if (!error) setMachines((data as Machine[]) || []);
+    const { data } = await supabase.from("machines").select("id, nome, usuario, setor, client_id").order("nome");
+    if (data) setMachines(data as Machine[]);
     setLoading(false);
   };
 
   const fetchHistory = async (machineId: string) => {
     if (!machineId) { setHistory([]); return; }
     setLoadingHistory(true);
-    const { data, error } = await supabase
-      .from("diagnostics")
-      .select("*")
-      .eq("maquina_id", machineId)
-      .order("data", { ascending: false })
-      .limit(20);
-    if (!error) setHistory((data as DiagnosticRow[]) || []);
+    const { data } = await supabase
+      .from("diagnostics").select("*").eq("maquina_id", machineId)
+      .order("data", { ascending: false }).limit(20);
+    setHistory((data as DiagnosticRow[]) || []);
     setLoadingHistory(false);
   };
 
@@ -94,55 +109,30 @@ export default function DiagnosticForm() {
   useEffect(() => { fetchHistory(selectedMachine); }, [selectedMachine]);
 
   const resetForm = () => {
-    setStatusVal("OK");
-    setProblemas("");
-    setRecomendacoes("");
-    setDiscoOk(false);
-    setRamOk(false);
-    setSistemaOk(false);
+    setStatusVal("OK"); setProblemas(""); setRecomendacoes("");
+    setDiscoOk(false); setRamOk(false); setSistemaOk(false);
+    setTemperatura("Normal"); setAntivirus(false); setAtualizacoes(false);
     setTestObs("");
   };
 
   const handleSave = async () => {
-    if (!selectedMachine) {
-      toast({ title: "Selecione uma máquina", variant: "destructive" });
-      return;
-    }
+    if (!selectedMachine) { toast({ title: "Selecione uma máquina", variant: "destructive" }); return; }
     setSaving(true);
 
-    // Create diagnostic
     const { data: diag, error: diagErr } = await supabase
       .from("diagnostics")
-      .insert({
-        maquina_id: selectedMachine,
-        data: format(new Date(), "yyyy-MM-dd"),
-        status: statusVal,
-        problemas: problemas.trim() || null,
-        recomendacoes: recomendacoes.trim() || null,
-      })
-      .select()
-      .single();
+      .insert({ maquina_id: selectedMachine, data: format(new Date(), "yyyy-MM-dd"), status: statusVal, problemas: problemas.trim() || null, recomendacoes: recomendacoes.trim() || null })
+      .select().single();
 
-    if (diagErr) {
-      toast({ title: "Erro ao salvar diagnóstico", description: diagErr.message, variant: "destructive" });
-      setSaving(false);
-      return;
-    }
+    if (diagErr) { toast({ title: "Erro ao salvar diagnóstico", description: diagErr.message, variant: "destructive" }); setSaving(false); return; }
 
-    // Create tests
     const { error: testErr } = await supabase.from("tests").insert({
-      diagnostico_id: diag.id,
-      disco_ok: discoOk,
-      ram_ok: ramOk,
-      sistema_ok: sistemaOk,
-      observacoes: testObs.trim() || null,
+      diagnostico_id: diag.id, disco_ok: discoOk, ram_ok: ramOk, sistema_ok: sistemaOk,
+      temperatura, antivirus, atualizacoes, observacoes: testObs.trim() || null,
     });
 
-    if (testErr) {
-      toast({ title: "Diagnóstico salvo, mas erro nos testes", description: testErr.message, variant: "destructive" });
-    } else {
-      toast({ title: "Diagnóstico salvo com sucesso" });
-    }
+    if (testErr) toast({ title: "Diagnóstico salvo, mas erro nos testes", description: testErr.message, variant: "destructive" });
+    else toast({ title: "Diagnóstico salvo com sucesso" });
 
     resetForm();
     fetchHistory(selectedMachine);
@@ -156,28 +146,20 @@ export default function DiagnosticForm() {
     const description = `Manutenção na máquina ${machine.nome}${diag.problemas ? ` - Problema: ${diag.problemas}` : ""}${diag.recomendacoes ? ` - Ação recomendada: ${diag.recomendacoes}` : ""}`;
 
     const { error } = await supabase.from("tickets").insert({
-      client_id: machine.client_id,
-      created_by_user_id: user.id,
-      requester_name: machine.usuario || "Diagnóstico",
-      service_date: diag.data,
-      description,
-      billed_hours: 0,
-      status: "open",
-      category: "suporte",
+      client_id: machine.client_id, created_by_user_id: user.id,
+      requester_name: machine.usuario || "Diagnóstico", service_date: diag.data,
+      description, billed_hours: 0, status: "open", category: "suporte",
       title: `Diagnóstico - ${machine.nome}`,
     });
 
-    if (error) {
-      toast({ title: "Erro ao gerar chamado", description: error.message, variant: "destructive" });
-    } else {
-      toast({ title: "Chamado criado com sucesso", description: "O chamado foi adicionado ao sistema de atendimentos." });
-    }
+    if (error) toast({ title: "Erro ao gerar chamado", description: error.message, variant: "destructive" });
+    else toast({ title: "Chamado criado com sucesso", description: "O chamado foi adicionado ao sistema de atendimentos." });
   };
 
   const openDetail = async (diag: DiagnosticRow) => {
     setDetailDiag(diag);
     const { data } = await supabase.from("tests").select("*").eq("diagnostico_id", diag.id);
-    setDetailTests(data || []);
+    setDetailTests((data as TestRow[]) || []);
   };
 
   const currentMachine = machines.find((m) => m.id === selectedMachine);
@@ -196,18 +178,14 @@ export default function DiagnosticForm() {
       <div className="grid gap-6 lg:grid-cols-2">
         {/* Form */}
         <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Formulário de Diagnóstico</CardTitle>
-          </CardHeader>
+          <CardHeader><CardTitle className="text-base">Formulário de Diagnóstico</CardTitle></CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
               <Label>Máquina *</Label>
               <Select value={selectedMachine} onValueChange={setSelectedMachine}>
                 <SelectTrigger><SelectValue placeholder="Selecione a máquina" /></SelectTrigger>
                 <SelectContent>
-                  {machines.map((m) => (
-                    <SelectItem key={m.id} value={m.id}>{m.nome}{m.setor ? ` (${m.setor})` : ""}</SelectItem>
-                  ))}
+                  {machines.map((m) => <SelectItem key={m.id} value={m.id}>{m.nome}{m.setor ? ` (${m.setor})` : ""}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
@@ -241,26 +219,45 @@ export default function DiagnosticForm() {
               <Textarea value={recomendacoes} onChange={(e) => setRecomendacoes(e.target.value)} placeholder="Ações recomendadas..." rows={3} />
             </div>
 
-            {/* Tests checklist */}
-            <div className="space-y-3">
+            {/* Tests checklist - expanded */}
+            <div className="space-y-3 rounded-md border p-4">
               <Label className="text-sm font-medium">Checklist de Testes</Label>
-              <div className="space-y-2">
+              <div className="grid grid-cols-2 gap-3">
                 <div className="flex items-center gap-2">
                   <Checkbox id="disco" checked={discoOk} onCheckedChange={(v) => setDiscoOk(v === true)} />
-                  <label htmlFor="disco" className="text-sm">Disco OK?</label>
+                  <label htmlFor="disco" className="text-sm">Disco OK</label>
                 </div>
                 <div className="flex items-center gap-2">
                   <Checkbox id="ram" checked={ramOk} onCheckedChange={(v) => setRamOk(v === true)} />
-                  <label htmlFor="ram" className="text-sm">RAM OK?</label>
+                  <label htmlFor="ram" className="text-sm">RAM OK</label>
                 </div>
                 <div className="flex items-center gap-2">
                   <Checkbox id="sistema" checked={sistemaOk} onCheckedChange={(v) => setSistemaOk(v === true)} />
-                  <label htmlFor="sistema" className="text-sm">Sistema OK?</label>
+                  <label htmlFor="sistema" className="text-sm">Sistema OK</label>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Checkbox id="antivirus" checked={antivirus} onCheckedChange={(v) => setAntivirus(v === true)} />
+                  <label htmlFor="antivirus" className="text-sm">AntiVírus OK</label>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Checkbox id="atualizacoes" checked={atualizacoes} onCheckedChange={(v) => setAtualizacoes(v === true)} />
+                  <label htmlFor="atualizacoes" className="text-sm">Atualizações OK</label>
                 </div>
               </div>
               <div className="space-y-2">
+                <Label>Temperatura</Label>
+                <Select value={temperatura} onValueChange={setTemperatura}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Normal">Normal</SelectItem>
+                    <SelectItem value="Alta">Alta</SelectItem>
+                    <SelectItem value="Crítica">Crítica</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
                 <Label>Observações dos testes</Label>
-                <Textarea value={testObs} onChange={(e) => setTestObs(e.target.value)} placeholder="Observações adicionais dos testes..." rows={2} />
+                <Textarea value={testObs} onChange={(e) => setTestObs(e.target.value)} placeholder="Observações adicionais..." rows={2} />
               </div>
             </div>
 
@@ -273,37 +270,33 @@ export default function DiagnosticForm() {
 
         {/* History */}
         <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Histórico de Diagnósticos</CardTitle>
-          </CardHeader>
+          <CardHeader><CardTitle className="text-base">Histórico de Diagnósticos</CardTitle></CardHeader>
           <CardContent>
             {!selectedMachine ? (
               <p className="text-sm text-muted-foreground">Selecione uma máquina para ver o histórico.</p>
-            ) : loadingHistory ? (
-              <PageLoader />
-            ) : history.length === 0 ? (
-              <EmptyState icon={<Stethoscope className="h-6 w-6 text-muted-foreground" />} title="Sem diagnósticos" description="Nenhum diagnóstico registrado para esta máquina" />
+            ) : loadingHistory ? <PageLoader /> : history.length === 0 ? (
+              <EmptyState icon={<Stethoscope className="h-6 w-6 text-muted-foreground" />} title="Sem diagnósticos" description="Nenhum diagnóstico registrado" />
             ) : (
               <Table>
                 <TableHeader>
                   <TableRow>
                     <TableHead>Data</TableHead>
                     <TableHead>Status</TableHead>
+                    <TableHead>Problemas</TableHead>
                     <TableHead className="text-right">Ações</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {history.map((d) => (
                     <TableRow key={d.id}>
-                      <TableCell>{format(new Date(d.data + "T00:00:00"), "dd/MM/yyyy")}</TableCell>
+                      <TableCell className="whitespace-nowrap">{format(new Date(d.data + "T00:00:00"), "dd/MM/yyyy")}</TableCell>
                       <TableCell>
-                        <Badge variant="outline" className={STATUS_COLORS[d.status] || ""}>
-                          {d.status}
-                        </Badge>
+                        <Badge variant="outline" className={STATUS_COLORS[d.status] || ""}>{d.status}</Badge>
                       </TableCell>
+                      <TableCell className="max-w-[200px] truncate text-xs">{d.problemas || "—"}</TableCell>
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-1">
-                          <Button variant="ghost" size="icon" onClick={() => openDetail(d)} title="Ver detalhes">
+                          <Button variant="ghost" size="icon" onClick={() => openDetail(d)} title="Detalhes">
                             <Eye className="h-4 w-4" />
                           </Button>
                           <Button variant="ghost" size="icon" onClick={() => handleGenerateTicket(d)} title="Gerar Chamado">
@@ -323,40 +316,31 @@ export default function DiagnosticForm() {
       {/* Detail Dialog */}
       <Dialog open={!!detailDiag} onOpenChange={(open) => !open && setDetailDiag(null)}>
         <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Detalhes do Diagnóstico</DialogTitle>
-          </DialogHeader>
+          <DialogHeader><DialogTitle>Detalhes do Diagnóstico</DialogTitle></DialogHeader>
           {detailDiag && (
             <div className="space-y-4">
               <div className="flex items-center gap-3">
-                <Badge variant="outline" className={STATUS_COLORS[detailDiag.status] || ""}>
-                  {detailDiag.status}
-                </Badge>
-                <span className="text-sm text-muted-foreground">
-                  {format(new Date(detailDiag.data + "T00:00:00"), "dd/MM/yyyy")}
-                </span>
+                <Badge variant="outline" className={STATUS_COLORS[detailDiag.status] || ""}>{detailDiag.status}</Badge>
+                <span className="text-sm text-muted-foreground">{format(new Date(detailDiag.data + "T00:00:00"), "dd/MM/yyyy")}</span>
               </div>
               {detailDiag.problemas && (
-                <div>
-                  <Label className="text-xs text-muted-foreground">Problemas</Label>
-                  <p className="text-sm mt-1">{detailDiag.problemas}</p>
-                </div>
+                <div><Label className="text-xs text-muted-foreground">Problemas</Label><p className="text-sm mt-1">{detailDiag.problemas}</p></div>
               )}
               {detailDiag.recomendacoes && (
-                <div>
-                  <Label className="text-xs text-muted-foreground">Recomendações</Label>
-                  <p className="text-sm mt-1">{detailDiag.recomendacoes}</p>
-                </div>
+                <div><Label className="text-xs text-muted-foreground">Recomendações</Label><p className="text-sm mt-1">{detailDiag.recomendacoes}</p></div>
               )}
               {detailTests.length > 0 && (
                 <div>
                   <Label className="text-xs text-muted-foreground">Testes</Label>
-                  <div className="mt-1 space-y-1 text-sm">
+                  <div className="mt-2 grid grid-cols-2 gap-2 text-sm">
                     <p>Disco: {detailTests[0].disco_ok ? "✅ OK" : "❌ Problema"}</p>
                     <p>RAM: {detailTests[0].ram_ok ? "✅ OK" : "❌ Problema"}</p>
                     <p>Sistema: {detailTests[0].sistema_ok ? "✅ OK" : "❌ Problema"}</p>
-                    {detailTests[0].observacoes && <p className="text-muted-foreground">{detailTests[0].observacoes}</p>}
+                    <p>AntiVírus: {detailTests[0].antivirus ? "✅ OK" : "❌ Problema"}</p>
+                    <p>Atualizações: {detailTests[0].atualizacoes ? "✅ OK" : "❌ Problema"}</p>
+                    <p>Temperatura: <span className={TEMP_COLORS[detailTests[0].temperatura || ""] || ""}>{detailTests[0].temperatura || "—"}</span></p>
                   </div>
+                  {detailTests[0].observacoes && <p className="mt-2 text-xs text-muted-foreground">{detailTests[0].observacoes}</p>}
                 </div>
               )}
             </div>
