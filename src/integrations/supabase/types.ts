@@ -128,32 +128,47 @@ export type Database = {
       }
       machines: {
         Row: {
+          armazenamento_gb: number | null
           client_id: string
           created_at: string
           id: string
           nome: string
           observacoes: string | null
+          processador: string | null
+          ram_gb: number | null
           setor: string | null
+          sistema_operacional: string | null
+          tipo_disco: string | null
           updated_at: string
           usuario: string | null
         }
         Insert: {
+          armazenamento_gb?: number | null
           client_id: string
           created_at?: string
           id?: string
           nome: string
           observacoes?: string | null
+          processador?: string | null
+          ram_gb?: number | null
           setor?: string | null
+          sistema_operacional?: string | null
+          tipo_disco?: string | null
           updated_at?: string
           usuario?: string | null
         }
         Update: {
+          armazenamento_gb?: number | null
           client_id?: string
           created_at?: string
           id?: string
           nome?: string
           observacoes?: string | null
+          processador?: string | null
+          ram_gb?: number | null
           setor?: string | null
+          sistema_operacional?: string | null
+          tipo_disco?: string | null
           updated_at?: string
           usuario?: string | null
         }
@@ -275,6 +290,8 @@ export type Database = {
       }
       tests: {
         Row: {
+          antivirus: boolean
+          atualizacoes: boolean
           created_at: string
           diagnostico_id: string
           disco_ok: boolean
@@ -282,8 +299,11 @@ export type Database = {
           observacoes: string | null
           ram_ok: boolean
           sistema_ok: boolean
+          temperatura: string | null
         }
         Insert: {
+          antivirus?: boolean
+          atualizacoes?: boolean
           created_at?: string
           diagnostico_id: string
           disco_ok?: boolean
@@ -291,8 +311,11 @@ export type Database = {
           observacoes?: string | null
           ram_ok?: boolean
           sistema_ok?: boolean
+          temperatura?: string | null
         }
         Update: {
+          antivirus?: boolean
+          atualizacoes?: boolean
           created_at?: string
           diagnostico_id?: string
           disco_ok?: boolean
@@ -300,6 +323,7 @@ export type Database = {
           observacoes?: string | null
           ram_ok?: boolean
           sistema_ok?: boolean
+          temperatura?: string | null
         }
         Relationships: [
           {
