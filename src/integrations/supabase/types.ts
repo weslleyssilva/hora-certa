@@ -85,6 +85,88 @@ export type Database = {
           },
         ]
       }
+      diagnostics: {
+        Row: {
+          created_at: string
+          data: string
+          id: string
+          maquina_id: string
+          problemas: string | null
+          recomendacoes: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          data?: string
+          id?: string
+          maquina_id: string
+          problemas?: string | null
+          recomendacoes?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          data?: string
+          id?: string
+          maquina_id?: string
+          problemas?: string | null
+          recomendacoes?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "diagnostics_maquina_id_fkey"
+            columns: ["maquina_id"]
+            isOneToOne: false
+            referencedRelation: "machines"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      machines: {
+        Row: {
+          client_id: string
+          created_at: string
+          id: string
+          nome: string
+          observacoes: string | null
+          setor: string | null
+          updated_at: string
+          usuario: string | null
+        }
+        Insert: {
+          client_id: string
+          created_at?: string
+          id?: string
+          nome: string
+          observacoes?: string | null
+          setor?: string | null
+          updated_at?: string
+          usuario?: string | null
+        }
+        Update: {
+          client_id?: string
+          created_at?: string
+          id?: string
+          nome?: string
+          observacoes?: string | null
+          setor?: string | null
+          updated_at?: string
+          usuario?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "machines_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       products_used: {
         Row: {
           client_id: string
@@ -190,6 +272,44 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      tests: {
+        Row: {
+          created_at: string
+          diagnostico_id: string
+          disco_ok: boolean
+          id: string
+          observacoes: string | null
+          ram_ok: boolean
+          sistema_ok: boolean
+        }
+        Insert: {
+          created_at?: string
+          diagnostico_id: string
+          disco_ok?: boolean
+          id?: string
+          observacoes?: string | null
+          ram_ok?: boolean
+          sistema_ok?: boolean
+        }
+        Update: {
+          created_at?: string
+          diagnostico_id?: string
+          disco_ok?: boolean
+          id?: string
+          observacoes?: string | null
+          ram_ok?: boolean
+          sistema_ok?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tests_diagnostico_id_fkey"
+            columns: ["diagnostico_id"]
+            isOneToOne: false
+            referencedRelation: "diagnostics"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       tickets: {
         Row: {
