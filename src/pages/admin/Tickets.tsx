@@ -375,7 +375,7 @@ export default function AdminTickets() {
     navigate(`/reports/tickets?${params.toString()}`);
   };
 
-  const handleExportPDFByContract = () => {
+  const handleExportPDFByContract = (mode: "full" | "currentMonth" = "full") => {
     if (!filterClient) {
       toast({
         title: "Selecione um cliente",
@@ -387,6 +387,7 @@ export default function AdminTickets() {
     const params = new URLSearchParams();
     params.set("clientId", filterClient);
     params.set("byContract", "1");
+    if (mode === "currentMonth") params.set("monthMode", "current");
     const search = searchRequester || searchTerm;
     if (search) params.set("search", search);
     navigate(`/reports/tickets?${params.toString()}`);
