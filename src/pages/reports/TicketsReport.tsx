@@ -199,9 +199,9 @@ export default function TicketsReport() {
   const contractedHours = contract?.contracted_hours || 0;
   const remainingHours = Math.max(0, contractedHours - totalHours);
 
-  // Format dates for display
-  const periodStart = fromParam ? formatDate(fromParam) : "Início";
-  const periodEnd = toParam ? formatDate(toParam) : "Fim";
+  // Format dates for display (uses effective period — overridden by contract dates when byContract)
+  const periodStart = effectivePeriod.from ? formatDate(effectivePeriod.from) : "Início";
+  const periodEnd = effectivePeriod.to ? formatDate(effectivePeriod.to) : "Fim";
   const emissionDate = format(new Date(), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR });
 
   return (
@@ -221,8 +221,8 @@ export default function TicketsReport() {
           }>
             <PDFDownloadSection
               clientName={clientName}
-              periodStart={fromParam || ""}
-              periodEnd={toParam || ""}
+              periodStart={effectivePeriod.from || ""}
+              periodEnd={effectivePeriod.to || ""}
               tickets={tickets}
               contractedHours={contract?.contracted_hours}
             />
