@@ -43,12 +43,18 @@ export default function TicketsReport() {
   const toParam = searchParams.get("to");
   const clientIdParam = searchParams.get("clientId");
   const searchParam = searchParams.get("search");
+  const byContractParam = searchParams.get("byContract") === "1";
+
+  const [effectivePeriod, setEffectivePeriod] = useState<{ from: string | null; to: string | null }>({
+    from: fromParam,
+    to: toParam,
+  });
 
   useEffect(() => {
     if (!isAuthLoading && profile) {
       loadReportData();
     }
-  }, [isAuthLoading, profile, fromParam, toParam, clientIdParam, searchParam]);
+  }, [isAuthLoading, profile, fromParam, toParam, clientIdParam, searchParam, byContractParam]);
 
   const loadReportData = async () => {
     try {
@@ -71,6 +77,10 @@ export default function TicketsReport() {
         // ADMIN - use param if provided
         effectiveClientId = clientIdParam;
       }
+
+      // Period to use for date filtering (defaults to URL params)
+      let periodFrom: string | null = fromParam;
+      let periodTo: string | null = toParam;
 
       // Load client name if we have a specific client
       if (effectiveClientId) {
@@ -97,10 +107,24 @@ export default function TicketsReport() {
 
         if (contractData && contractData.length > 0) {
           setContract(contractData[0]);
+          // If byContract mode, override period with contract dates
+          if (byContractParam) {
+            periodFrom = contractData[0].start_date;
+            periodTo = contractData[0].end_date;
+          }
+        } else if (byContractParam) {
+          setError("Cliente não possui contrato vigente");
+          return;
         }
       } else {
         setClientName("Todos os Clientes");
+        if (byContractParam) {
+          setError("Selecione um cliente para gerar o relatório por contrato");
+          return;
+        }
       }
+
+      setEffectivePeriod({ from: periodFrom, to: periodTo });
 
       // Build tickets query
       let query = supabase
@@ -114,11 +138,11 @@ export default function TicketsReport() {
       }
 
       // Apply date filters
-      if (fromParam) {
-        query = query.gte("service_date", fromParam);
+      if (periodFrom) {
+        query = query.gte("service_date", periodFrom);
       }
-      if (toParam) {
-        query = query.lte("service_date", toParam);
+      if (periodTo) {
+        query = query.lte("service_date", periodTo);
       }
 
       // Apply search filter
