@@ -48,7 +48,7 @@ export default function TicketsReport() {
     if (!isAuthLoading && profile) {
       loadReportData();
     }
-  }, [isAuthLoading, profile, fromParam, toParam, clientIdParam]);
+  }, [isAuthLoading, profile, fromParam, toParam, clientIdParam, searchParam]);
 
   const loadReportData = async () => {
     try {
