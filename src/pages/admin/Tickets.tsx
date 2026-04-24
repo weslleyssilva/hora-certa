@@ -375,6 +375,23 @@ export default function AdminTickets() {
     navigate(`/reports/tickets?${params.toString()}`);
   };
 
+  const handleExportPDFByContract = () => {
+    if (!filterClient) {
+      toast({
+        title: "Selecione um cliente",
+        description: "Para gerar o relatório por contrato, escolha um cliente no filtro.",
+        variant: "destructive",
+      });
+      return;
+    }
+    const params = new URLSearchParams();
+    params.set("clientId", filterClient);
+    params.set("byContract", "1");
+    const search = searchRequester || searchTerm;
+    if (search) params.set("search", search);
+    navigate(`/reports/tickets?${params.toString()}`);
+  };
+
   const CategoryBadge = ({ category }: { category: string | null }) => {
     const cat = (category || "suporte") as TicketCategory;
     return (
@@ -409,6 +426,10 @@ export default function AdminTickets() {
           <Button variant="outline" onClick={handleExportPDF}>
             <Download className="mr-2 h-4 w-4" />
             Exportar PDF
+          </Button>
+          <Button variant="outline" onClick={handleExportPDFByContract}>
+            <Download className="mr-2 h-4 w-4" />
+            PDF por contrato
           </Button>
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
