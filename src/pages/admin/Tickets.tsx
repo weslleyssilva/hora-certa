@@ -368,7 +368,10 @@ export default function AdminTickets() {
   const handleExportPDF = () => {
     const params = new URLSearchParams();
     if (filterClient) params.set("clientId", filterClient);
-    if (searchTerm) params.set("search", searchTerm);
+    if (dateFrom) params.set("from", format(dateFrom, "yyyy-MM-dd"));
+    if (dateTo) params.set("to", format(dateTo, "yyyy-MM-dd"));
+    const search = searchRequester || searchTerm;
+    if (search) params.set("search", search);
     navigate(`/reports/tickets?${params.toString()}`);
   };
 
