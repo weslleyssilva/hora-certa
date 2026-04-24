@@ -427,6 +427,10 @@ export default function AdminTickets() {
             <Download className="mr-2 h-4 w-4" />
             Exportar PDF
           </Button>
+          <Button variant="outline" onClick={handleExportPDFByContract}>
+            <Download className="mr-2 h-4 w-4" />
+            PDF por contrato
+          </Button>
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
               <Button onClick={openCreateDialog}>
