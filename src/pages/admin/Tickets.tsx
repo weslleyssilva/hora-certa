@@ -14,6 +14,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Ticket, Plus, Pencil, Trash2, Search, PlayCircle, CheckCircle, Download, CalendarIcon, X } from "lucide-react";
@@ -428,10 +429,22 @@ export default function AdminTickets() {
             <Download className="mr-2 h-4 w-4" />
             Exportar PDF
           </Button>
-          <Button variant="outline" onClick={handleExportPDFByContract}>
-            <Download className="mr-2 h-4 w-4" />
-            PDF por contrato
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline">
+                <Download className="mr-2 h-4 w-4" />
+                PDF por contrato
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="bg-popover">
+              <DropdownMenuItem onClick={() => handleExportPDFByContract("full")}>
+                Contrato completo
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleExportPDFByContract("currentMonth")}>
+                Mês vigente
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
               <Button onClick={openCreateDialog}>
