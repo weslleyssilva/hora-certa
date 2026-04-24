@@ -1,6 +1,6 @@
 import { useEffect, useState, lazy, Suspense } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
-import { format, parseISO } from "date-fns";
+import { format, parseISO, startOfMonth, endOfMonth, max as maxDate, min as minDate } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -44,6 +44,7 @@ export default function TicketsReport() {
   const clientIdParam = searchParams.get("clientId");
   const searchParam = searchParams.get("search");
   const byContractParam = searchParams.get("byContract") === "1";
+  const monthModeParam = searchParams.get("monthMode"); // "current" => limit to current month within contract
 
   const [effectivePeriod, setEffectivePeriod] = useState<{ from: string | null; to: string | null }>({
     from: fromParam,
@@ -54,7 +55,7 @@ export default function TicketsReport() {
     if (!isAuthLoading && profile) {
       loadReportData();
     }
-  }, [isAuthLoading, profile, fromParam, toParam, clientIdParam, searchParam, byContractParam]);
+  }, [isAuthLoading, profile, fromParam, toParam, clientIdParam, searchParam, byContractParam, monthModeParam]);
 
   const loadReportData = async () => {
     try {
@@ -111,6 +112,18 @@ export default function TicketsReport() {
           if (byContractParam) {
             periodFrom = contractData[0].start_date;
             periodTo = contractData[0].end_date;
+            // If currentMonth mode, intersect contract period with current month
+            if (monthModeParam === "current") {
+              const now = new Date();
+              const monthStart = startOfMonth(now);
+              const monthEnd = endOfMonth(now);
+              const contractStart = parseISO(contractData[0].start_date);
+              const contractEnd = parseISO(contractData[0].end_date);
+              const effFrom = maxDate([monthStart, contractStart]);
+              const effTo = minDate([monthEnd, contractEnd]);
+              periodFrom = format(effFrom, "yyyy-MM-dd");
+              periodTo = format(effTo, "yyyy-MM-dd");
+            }
           }
         } else if (byContractParam) {
           setError("Cliente não possui contrato vigente");
