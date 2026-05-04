@@ -797,6 +797,14 @@ export default function AdminTickets() {
                         </TableCell>
                         <TableCell className="text-right">
                           <div className="flex justify-end gap-2">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => openViewDialog(ticket)}
+                              title="Ver solicitação"
+                            >
+                              <Eye className="h-4 w-4" />
+                            </Button>
                             {ticket.status === TICKET_STATUS.OPEN && (
                               <Button
                                 variant="ghost"
@@ -887,6 +895,14 @@ export default function AdminTickets() {
                         </TableCell>
                         <TableCell className="text-right">
                           <div className="flex justify-end gap-2">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => openViewDialog(ticket)}
+                              title="Ver detalhes"
+                            >
+                              <Eye className="h-4 w-4" />
+                            </Button>
                             <Button
                               variant="ghost"
                               size="sm"
