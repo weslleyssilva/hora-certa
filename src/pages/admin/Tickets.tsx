@@ -585,6 +585,26 @@ export default function AdminTickets() {
                   rows={4}
                 />
               </div>
+              <div className="space-y-2">
+                <Label htmlFor="service_performed">Serviço Realizado</Label>
+                <Textarea
+                  id="service_performed"
+                  value={formData.service_performed}
+                  onChange={(e) => setFormData({ ...formData, service_performed: e.target.value })}
+                  placeholder="Descreva o serviço efetivamente executado..."
+                  rows={3}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="observations">Observações</Label>
+                <Textarea
+                  id="observations"
+                  value={formData.observations}
+                  onChange={(e) => setFormData({ ...formData, observations: e.target.value })}
+                  placeholder="Observações adicionais (interno)..."
+                  rows={3}
+                />
+              </div>
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
@@ -1034,6 +1054,26 @@ export default function AdminTickets() {
                 rows={4}
               />
             </div>
+            <div className="space-y-2">
+              <Label htmlFor="attend_service_performed">Serviço Realizado</Label>
+              <Textarea
+                id="attend_service_performed"
+                value={attendFormData.service_performed}
+                onChange={(e) => setAttendFormData({ ...attendFormData, service_performed: e.target.value })}
+                placeholder="Descreva o serviço efetivamente executado..."
+                rows={3}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="attend_observations">Observações</Label>
+              <Textarea
+                id="attend_observations"
+                value={attendFormData.observations}
+                onChange={(e) => setAttendFormData({ ...attendFormData, observations: e.target.value })}
+                placeholder="Observações adicionais (interno)..."
+                rows={3}
+              />
+            </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsAttendDialogOpen(false)}>
@@ -1041,6 +1081,99 @@ export default function AdminTickets() {
             </Button>
             <Button onClick={handleAttend} disabled={isSaving}>
               {isSaving ? "Salvando..." : "Concluir Atendimento"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog para visualizar atendimento */}
+      <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Detalhes do Atendimento</DialogTitle>
+            <DialogDescription>
+              {viewingTicket?.clients?.name && <span>{viewingTicket.clients.name}</span>}
+            </DialogDescription>
+          </DialogHeader>
+          {viewingTicket && (
+            <div className="space-y-4 py-2 max-h-[60vh] overflow-y-auto text-sm">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-muted-foreground">Data</Label>
+                  <p className="font-medium">{formatDate(viewingTicket.service_date)}</p>
+                </div>
+                <div>
+                  <Label className="text-muted-foreground">Solicitante</Label>
+                  <p className="font-medium">{viewingTicket.requester_name}</p>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-muted-foreground">Status</Label>
+                  <div className="mt-1">
+                    <StatusBadge variant={getStatusBadgeVariant(viewingTicket.status)}>
+                      {TICKET_STATUS_LABELS[viewingTicket.status] || viewingTicket.status}
+                    </StatusBadge>
+                  </div>
+                </div>
+                <div>
+                  <Label className="text-muted-foreground">Categoria</Label>
+                  <div className="mt-1"><CategoryBadge category={viewingTicket.category} /></div>
+                </div>
+              </div>
+              {viewingTicket.title && (
+                <div>
+                  <Label className="text-muted-foreground">Título</Label>
+                  <p className="font-medium">{viewingTicket.title}</p>
+                </div>
+              )}
+              <div>
+                <Label className="text-muted-foreground">Solicitação</Label>
+                <p className="whitespace-pre-wrap rounded-md border bg-muted/30 p-3">
+                  {viewingTicket.description}
+                </p>
+              </div>
+              {viewingTicket.service_performed && (
+                <div>
+                  <Label className="text-muted-foreground">Serviço Realizado</Label>
+                  <p className="whitespace-pre-wrap rounded-md border bg-muted/30 p-3">
+                    {viewingTicket.service_performed}
+                  </p>
+                </div>
+              )}
+              {viewingTicket.observations && (
+                <div>
+                  <Label className="text-muted-foreground">Observações</Label>
+                  <p className="whitespace-pre-wrap rounded-md border bg-muted/30 p-3">
+                    {viewingTicket.observations}
+                  </p>
+                </div>
+              )}
+              {(viewingTicket.start_time || viewingTicket.end_time || viewingTicket.duration_minutes) && (
+                <div className="grid grid-cols-3 gap-4">
+                  <div>
+                    <Label className="text-muted-foreground">Início</Label>
+                    <p className="font-medium">{viewingTicket.start_time || "-"}</p>
+                  </div>
+                  <div>
+                    <Label className="text-muted-foreground">Fim</Label>
+                    <p className="font-medium">{viewingTicket.end_time || "-"}</p>
+                  </div>
+                  <div>
+                    <Label className="text-muted-foreground">Duração</Label>
+                    <p className="font-medium">{viewingTicket.duration_minutes ? `${viewingTicket.duration_minutes} min` : "-"}</p>
+                  </div>
+                </div>
+              )}
+              <div>
+                <Label className="text-muted-foreground">Horas Faturadas</Label>
+                <p className="font-medium">{formatHours(viewingTicket.billed_hours)}</p>
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsViewDialogOpen(false)}>
+              Fechar
             </Button>
           </DialogFooter>
         </DialogContent>
