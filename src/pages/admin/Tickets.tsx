@@ -17,7 +17,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Ticket, Plus, Pencil, Trash2, Search, PlayCircle, CheckCircle, Download, CalendarIcon, X } from "lucide-react";
+import { Ticket, Plus, Pencil, Trash2, Search, PlayCircle, CheckCircle, Download, CalendarIcon, X, Eye } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { formatDate, formatHours, truncate, calculateBilledHours, calculateDurationMinutes } from "@/lib/utils";
@@ -42,6 +42,8 @@ interface TicketData {
   billed_hours: number;
   status: string;
   category: string | null;
+  service_performed?: string | null;
+  observations?: string | null;
   clients?: { name: string } | null;
 }
 
@@ -58,6 +60,8 @@ export default function AdminTickets() {
   const [clients, setClients] = useState<Client[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isAttendDialogOpen, setIsAttendDialogOpen] = useState(false);
+  const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
+  const [viewingTicket, setViewingTicket] = useState<TicketData | null>(null);
   const [editingTicket, setEditingTicket] = useState<TicketData | null>(null);
   const [attendingTicket, setAttendingTicket] = useState<TicketData | null>(null);
   const [formData, setFormData] = useState({
@@ -70,6 +74,8 @@ export default function AdminTickets() {
     description: "",
     billed_hours: "",
     category: "suporte",
+    service_performed: "",
+    observations: "",
   });
   const [attendFormData, setAttendFormData] = useState({
     service_date: "",
@@ -79,6 +85,8 @@ export default function AdminTickets() {
     billed_hours: "",
     description: "",
     category: "suporte",
+    service_performed: "",
+    observations: "",
   });
   const [filterClient, setFilterClient] = useState("");
   const [filterCategory, setFilterCategory] = useState("");
@@ -167,6 +175,8 @@ export default function AdminTickets() {
       description: "",
       billed_hours: MIN_BILLED_HOURS.toString(),
       category: "suporte",
+      service_performed: "",
+      observations: "",
     });
     setIsDialogOpen(true);
   };
@@ -183,6 +193,8 @@ export default function AdminTickets() {
       description: ticket.description,
       billed_hours: ticket.billed_hours.toString(),
       category: ticket.category || "suporte",
+      service_performed: ticket.service_performed || "",
+      observations: ticket.observations || "",
     });
     setIsDialogOpen(true);
   };
@@ -197,8 +209,15 @@ export default function AdminTickets() {
       billed_hours: MIN_BILLED_HOURS.toString(),
       description: ticket.description,
       category: ticket.category || "suporte",
+      service_performed: "",
+      observations: "",
     });
     setIsAttendDialogOpen(true);
+  };
+
+  const openViewDialog = (ticket: TicketData) => {
+    setViewingTicket(ticket);
+    setIsViewDialogOpen(true);
   };
 
   const handleSave = async () => {
@@ -232,6 +251,8 @@ export default function AdminTickets() {
         created_by_user_id: user?.id,
         status: TICKET_STATUS.COMPLETED,
         category: formData.category,
+        service_performed: formData.service_performed || null,
+        observations: formData.observations || null,
       };
 
       if (editingTicket) {
@@ -283,6 +304,8 @@ export default function AdminTickets() {
           billed_hours: billedHours,
           description: attendFormData.description,
           category: attendFormData.category,
+          service_performed: attendFormData.service_performed || null,
+          observations: attendFormData.observations || null,
         })
         .eq("id", attendingTicket.id);
 
