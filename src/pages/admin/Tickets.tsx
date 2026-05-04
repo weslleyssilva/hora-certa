@@ -802,7 +802,11 @@ export default function AdminTickets() {
                   </TableHeader>
                   <TableBody>
                     {filteredPending.map((ticket) => (
-                      <TableRow key={ticket.id}>
+                      <TableRow
+                        key={ticket.id}
+                        className="cursor-pointer"
+                        onClick={() => openViewDialog(ticket)}
+                      >
                         <TableCell className="font-medium">
                           {formatDate(ticket.service_date)}
                         </TableCell>
@@ -815,7 +819,7 @@ export default function AdminTickets() {
                             {TICKET_STATUS_LABELS[ticket.status] || ticket.status}
                           </StatusBadge>
                         </TableCell>
-                        <TableCell className="text-right">
+                        <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
                           <div className="flex justify-end gap-2">
                             <Button
                               variant="ghost"
@@ -902,7 +906,11 @@ export default function AdminTickets() {
                   </TableHeader>
                   <TableBody>
                     {filteredCompleted.map((ticket) => (
-                      <TableRow key={ticket.id}>
+                      <TableRow
+                        key={ticket.id}
+                        className="cursor-pointer"
+                        onClick={() => openViewDialog(ticket)}
+                      >
                         <TableCell className="font-medium">
                           {formatDate(ticket.service_date)}
                         </TableCell>
@@ -913,7 +921,7 @@ export default function AdminTickets() {
                         <TableCell className="max-w-[200px]">
                           {truncate(ticket.description, 50)}
                         </TableCell>
-                        <TableCell className="text-right">
+                        <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
                           <div className="flex justify-end gap-2">
                             <Button
                               variant="ghost"
