@@ -346,8 +346,10 @@ export type Database = {
           duration_minutes: number | null
           end_time: string | null
           id: string
+          observations: string | null
           requester_name: string
           service_date: string
+          service_performed: string | null
           start_time: string | null
           status: Database["public"]["Enums"]["ticket_status"]
           title: string | null
@@ -363,8 +365,10 @@ export type Database = {
           duration_minutes?: number | null
           end_time?: string | null
           id?: string
+          observations?: string | null
           requester_name: string
           service_date: string
+          service_performed?: string | null
           start_time?: string | null
           status?: Database["public"]["Enums"]["ticket_status"]
           title?: string | null
@@ -380,8 +384,10 @@ export type Database = {
           duration_minutes?: number | null
           end_time?: string | null
           id?: string
+          observations?: string | null
           requester_name?: string
           service_date?: string
+          service_performed?: string | null
           start_time?: string | null
           status?: Database["public"]["Enums"]["ticket_status"]
           title?: string | null
