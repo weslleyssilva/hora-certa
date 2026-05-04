@@ -17,7 +17,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Ticket, Plus, Pencil, Trash2, Search, PlayCircle, CheckCircle, Download, CalendarIcon, X } from "lucide-react";
+import { Ticket, Plus, Pencil, Trash2, Search, PlayCircle, CheckCircle, Download, CalendarIcon, X, Eye } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { formatDate, formatHours, truncate, calculateBilledHours, calculateDurationMinutes } from "@/lib/utils";
@@ -42,6 +42,8 @@ interface TicketData {
   billed_hours: number;
   status: string;
   category: string | null;
+  service_performed?: string | null;
+  observations?: string | null;
   clients?: { name: string } | null;
 }
 
@@ -58,6 +60,8 @@ export default function AdminTickets() {
   const [clients, setClients] = useState<Client[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isAttendDialogOpen, setIsAttendDialogOpen] = useState(false);
+  const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
+  const [viewingTicket, setViewingTicket] = useState<TicketData | null>(null);
   const [editingTicket, setEditingTicket] = useState<TicketData | null>(null);
   const [attendingTicket, setAttendingTicket] = useState<TicketData | null>(null);
   const [formData, setFormData] = useState({
@@ -70,6 +74,8 @@ export default function AdminTickets() {
     description: "",
     billed_hours: "",
     category: "suporte",
+    service_performed: "",
+    observations: "",
   });
   const [attendFormData, setAttendFormData] = useState({
     service_date: "",
@@ -79,6 +85,8 @@ export default function AdminTickets() {
     billed_hours: "",
     description: "",
     category: "suporte",
+    service_performed: "",
+    observations: "",
   });
   const [filterClient, setFilterClient] = useState("");
   const [filterCategory, setFilterCategory] = useState("");
@@ -167,6 +175,8 @@ export default function AdminTickets() {
       description: "",
       billed_hours: MIN_BILLED_HOURS.toString(),
       category: "suporte",
+      service_performed: "",
+      observations: "",
     });
     setIsDialogOpen(true);
   };
@@ -183,6 +193,8 @@ export default function AdminTickets() {
       description: ticket.description,
       billed_hours: ticket.billed_hours.toString(),
       category: ticket.category || "suporte",
+      service_performed: ticket.service_performed || "",
+      observations: ticket.observations || "",
     });
     setIsDialogOpen(true);
   };
@@ -197,8 +209,15 @@ export default function AdminTickets() {
       billed_hours: MIN_BILLED_HOURS.toString(),
       description: ticket.description,
       category: ticket.category || "suporte",
+      service_performed: "",
+      observations: "",
     });
     setIsAttendDialogOpen(true);
+  };
+
+  const openViewDialog = (ticket: TicketData) => {
+    setViewingTicket(ticket);
+    setIsViewDialogOpen(true);
   };
 
   const handleSave = async () => {
@@ -232,6 +251,8 @@ export default function AdminTickets() {
         created_by_user_id: user?.id,
         status: TICKET_STATUS.COMPLETED,
         category: formData.category,
+        service_performed: formData.service_performed || null,
+        observations: formData.observations || null,
       };
 
       if (editingTicket) {
@@ -283,6 +304,8 @@ export default function AdminTickets() {
           billed_hours: billedHours,
           description: attendFormData.description,
           category: attendFormData.category,
+          service_performed: attendFormData.service_performed || null,
+          observations: attendFormData.observations || null,
         })
         .eq("id", attendingTicket.id);
 
@@ -562,6 +585,26 @@ export default function AdminTickets() {
                   rows={4}
                 />
               </div>
+              <div className="space-y-2">
+                <Label htmlFor="service_performed">Serviço Realizado</Label>
+                <Textarea
+                  id="service_performed"
+                  value={formData.service_performed}
+                  onChange={(e) => setFormData({ ...formData, service_performed: e.target.value })}
+                  placeholder="Descreva o serviço efetivamente executado..."
+                  rows={3}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="observations">Observações</Label>
+                <Textarea
+                  id="observations"
+                  value={formData.observations}
+                  onChange={(e) => setFormData({ ...formData, observations: e.target.value })}
+                  placeholder="Observações adicionais (interno)..."
+                  rows={3}
+                />
+              </div>
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
@@ -774,6 +817,14 @@ export default function AdminTickets() {
                         </TableCell>
                         <TableCell className="text-right">
                           <div className="flex justify-end gap-2">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => openViewDialog(ticket)}
+                              title="Ver solicitação"
+                            >
+                              <Eye className="h-4 w-4" />
+                            </Button>
                             {ticket.status === TICKET_STATUS.OPEN && (
                               <Button
                                 variant="ghost"
@@ -864,6 +915,14 @@ export default function AdminTickets() {
                         </TableCell>
                         <TableCell className="text-right">
                           <div className="flex justify-end gap-2">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => openViewDialog(ticket)}
+                              title="Ver detalhes"
+                            >
+                              <Eye className="h-4 w-4" />
+                            </Button>
                             <Button
                               variant="ghost"
                               size="sm"
@@ -995,6 +1054,26 @@ export default function AdminTickets() {
                 rows={4}
               />
             </div>
+            <div className="space-y-2">
+              <Label htmlFor="attend_service_performed">Serviço Realizado</Label>
+              <Textarea
+                id="attend_service_performed"
+                value={attendFormData.service_performed}
+                onChange={(e) => setAttendFormData({ ...attendFormData, service_performed: e.target.value })}
+                placeholder="Descreva o serviço efetivamente executado..."
+                rows={3}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="attend_observations">Observações</Label>
+              <Textarea
+                id="attend_observations"
+                value={attendFormData.observations}
+                onChange={(e) => setAttendFormData({ ...attendFormData, observations: e.target.value })}
+                placeholder="Observações adicionais (interno)..."
+                rows={3}
+              />
+            </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsAttendDialogOpen(false)}>
@@ -1002,6 +1081,99 @@ export default function AdminTickets() {
             </Button>
             <Button onClick={handleAttend} disabled={isSaving}>
               {isSaving ? "Salvando..." : "Concluir Atendimento"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog para visualizar atendimento */}
+      <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Detalhes do Atendimento</DialogTitle>
+            <DialogDescription>
+              {viewingTicket?.clients?.name && <span>{viewingTicket.clients.name}</span>}
+            </DialogDescription>
+          </DialogHeader>
+          {viewingTicket && (
+            <div className="space-y-4 py-2 max-h-[60vh] overflow-y-auto text-sm">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-muted-foreground">Data</Label>
+                  <p className="font-medium">{formatDate(viewingTicket.service_date)}</p>
+                </div>
+                <div>
+                  <Label className="text-muted-foreground">Solicitante</Label>
+                  <p className="font-medium">{viewingTicket.requester_name}</p>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-muted-foreground">Status</Label>
+                  <div className="mt-1">
+                    <StatusBadge variant={getStatusBadgeVariant(viewingTicket.status)}>
+                      {TICKET_STATUS_LABELS[viewingTicket.status] || viewingTicket.status}
+                    </StatusBadge>
+                  </div>
+                </div>
+                <div>
+                  <Label className="text-muted-foreground">Categoria</Label>
+                  <div className="mt-1"><CategoryBadge category={viewingTicket.category} /></div>
+                </div>
+              </div>
+              {viewingTicket.title && (
+                <div>
+                  <Label className="text-muted-foreground">Título</Label>
+                  <p className="font-medium">{viewingTicket.title}</p>
+                </div>
+              )}
+              <div>
+                <Label className="text-muted-foreground">Solicitação</Label>
+                <p className="whitespace-pre-wrap rounded-md border bg-muted/30 p-3">
+                  {viewingTicket.description}
+                </p>
+              </div>
+              {viewingTicket.service_performed && (
+                <div>
+                  <Label className="text-muted-foreground">Serviço Realizado</Label>
+                  <p className="whitespace-pre-wrap rounded-md border bg-muted/30 p-3">
+                    {viewingTicket.service_performed}
+                  </p>
+                </div>
+              )}
+              {viewingTicket.observations && (
+                <div>
+                  <Label className="text-muted-foreground">Observações</Label>
+                  <p className="whitespace-pre-wrap rounded-md border bg-muted/30 p-3">
+                    {viewingTicket.observations}
+                  </p>
+                </div>
+              )}
+              {(viewingTicket.start_time || viewingTicket.end_time || viewingTicket.duration_minutes) && (
+                <div className="grid grid-cols-3 gap-4">
+                  <div>
+                    <Label className="text-muted-foreground">Início</Label>
+                    <p className="font-medium">{viewingTicket.start_time || "-"}</p>
+                  </div>
+                  <div>
+                    <Label className="text-muted-foreground">Fim</Label>
+                    <p className="font-medium">{viewingTicket.end_time || "-"}</p>
+                  </div>
+                  <div>
+                    <Label className="text-muted-foreground">Duração</Label>
+                    <p className="font-medium">{viewingTicket.duration_minutes ? `${viewingTicket.duration_minutes} min` : "-"}</p>
+                  </div>
+                </div>
+              )}
+              <div>
+                <Label className="text-muted-foreground">Horas Faturadas</Label>
+                <p className="font-medium">{formatHours(viewingTicket.billed_hours)}</p>
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsViewDialogOpen(false)}>
+              Fechar
             </Button>
           </DialogFooter>
         </DialogContent>
