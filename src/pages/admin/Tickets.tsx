@@ -804,7 +804,7 @@ export default function AdminTickets() {
                     {filteredPending.map((ticket) => (
                       <TableRow
                         key={ticket.id}
-                        className="cursor-pointer"
+                        className="cursor-pointer group hover:bg-muted/50"
                         onClick={() => openViewDialog(ticket)}
                       >
                         <TableCell className="font-medium">
