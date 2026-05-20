@@ -18,6 +18,7 @@ interface TicketData {
   requester_name: string;
   billed_hours: number;
   description: string;
+  service_performed: string | null;
   status: string;
 }
 
@@ -142,7 +143,7 @@ export default function TicketsReport() {
       // Build tickets query
       let query = supabase
         .from("tickets")
-        .select("id, service_date, requester_name, billed_hours, description, status")
+        .select("id, service_date, requester_name, billed_hours, description, service_performed, status")
         .order("service_date", { ascending: false });
 
       // Apply client filter (RLS will also enforce for CLIENT_USER)
@@ -316,6 +317,7 @@ export default function TicketsReport() {
                   <th className="p-2 text-left font-semibold text-gray-900">Solicitante</th>
                   <th className="p-2 text-center font-semibold text-gray-900">Horas</th>
                   <th className="p-2 text-left font-semibold text-gray-900">Descrição</th>
+                  <th className="p-2 text-left font-semibold text-gray-900">Serviço Realizado</th>
                 </tr>
               </thead>
               <tbody>
@@ -331,6 +333,9 @@ export default function TicketsReport() {
                     <td className="p-2 max-w-xs text-gray-800">
                       <span className="line-clamp-2">{ticket.description}</span>
                     </td>
+                    <td className="p-2 max-w-xs text-gray-800">
+                      <span className="line-clamp-2">{ticket.service_performed || "—"}</span>
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -340,6 +345,7 @@ export default function TicketsReport() {
                     Total
                   </td>
                   <td className="p-2 text-center text-gray-900">{formatHours(totalHours)}</td>
+                  <td className="p-2"></td>
                   <td className="p-2"></td>
                 </tr>
               </tfoot>
