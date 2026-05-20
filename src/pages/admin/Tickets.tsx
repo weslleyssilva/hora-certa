@@ -804,11 +804,14 @@ export default function AdminTickets() {
                     {filteredPending.map((ticket) => (
                       <TableRow
                         key={ticket.id}
-                        className="cursor-pointer"
+                        className="cursor-pointer group hover:bg-muted/50"
                         onClick={() => openViewDialog(ticket)}
                       >
                         <TableCell className="font-medium">
-                          {formatDate(ticket.service_date)}
+                          <div className="flex items-center gap-2">
+                            {formatDate(ticket.service_date)}
+                            <Eye className="h-3.5 w-3.5 text-primary opacity-0 group-hover:opacity-100 transition-opacity" />
+                          </div>
                         </TableCell>
                         <TableCell>{ticket.clients?.name || "N/A"}</TableCell>
                         <TableCell>{ticket.title || "-"}</TableCell>
@@ -908,11 +911,14 @@ export default function AdminTickets() {
                     {filteredCompleted.map((ticket) => (
                       <TableRow
                         key={ticket.id}
-                        className="cursor-pointer"
+                        className="cursor-pointer group hover:bg-muted/50"
                         onClick={() => openViewDialog(ticket)}
                       >
                         <TableCell className="font-medium">
-                          {formatDate(ticket.service_date)}
+                          <div className="flex items-center gap-2">
+                            {formatDate(ticket.service_date)}
+                            <Eye className="h-3.5 w-3.5 text-primary opacity-0 group-hover:opacity-100 transition-opacity" />
+                          </div>
                         </TableCell>
                         <TableCell>{ticket.clients?.name || "N/A"}</TableCell>
                         <TableCell>{ticket.requester_name}</TableCell>
