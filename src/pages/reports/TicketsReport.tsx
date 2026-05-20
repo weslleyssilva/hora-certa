@@ -1,6 +1,6 @@
 import { useEffect, useState, lazy, Suspense } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
-import { format, parseISO, startOfMonth, endOfMonth, max as maxDate, min as minDate } from "date-fns";
+import { format, startOfMonth, endOfMonth } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -111,19 +111,14 @@ export default function TicketsReport() {
           setContract(contractData[0]);
           // If byContract mode, override period with contract dates
           if (byContractParam) {
-            periodFrom = contractData[0].start_date;
-            periodTo = contractData[0].end_date;
-            // If currentMonth mode, intersect contract period with current month
             if (monthModeParam === "current") {
+              // Current month: use full current month range (do not intersect with contract bounds)
               const now = new Date();
-              const monthStart = startOfMonth(now);
-              const monthEnd = endOfMonth(now);
-              const contractStart = parseISO(contractData[0].start_date);
-              const contractEnd = parseISO(contractData[0].end_date);
-              const effFrom = maxDate([monthStart, contractStart]);
-              const effTo = minDate([monthEnd, contractEnd]);
-              periodFrom = format(effFrom, "yyyy-MM-dd");
-              periodTo = format(effTo, "yyyy-MM-dd");
+              periodFrom = format(startOfMonth(now), "yyyy-MM-dd");
+              periodTo = format(endOfMonth(now), "yyyy-MM-dd");
+            } else {
+              periodFrom = contractData[0].start_date;
+              periodTo = contractData[0].end_date;
             }
           }
         } else if (byContractParam) {
