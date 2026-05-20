@@ -83,17 +83,20 @@ const styles = StyleSheet.create({
     paddingHorizontal: 4,
   },
   colDate: {
-    width: "15%",
+    width: "13%",
   },
   colRequester: {
-    width: "20%",
+    width: "17%",
   },
   colHours: {
-    width: "10%",
+    width: "8%",
     textAlign: "center",
   },
   colDescription: {
-    width: "55%",
+    width: "31%",
+  },
+  colService: {
+    width: "31%",
   },
   headerCell: {
     fontWeight: "bold",
@@ -128,6 +131,7 @@ interface TicketData {
   requester_name: string;
   billed_hours: number;
   description: string;
+  service_performed?: string | null;
 }
 
 interface TicketsReportPDFProps {
@@ -238,6 +242,9 @@ export function TicketsReportPDF({
                 <Text style={[styles.headerCell, styles.colDescription]}>
                   Descrição
                 </Text>
+                <Text style={[styles.headerCell, styles.colService]}>
+                  Serviço Realizado
+                </Text>
               </View>
 
               {/* Table Rows */}
@@ -257,6 +264,13 @@ export function TicketsReportPDF({
                       ? ticket.description.substring(0, 100) + "..."
                       : ticket.description}
                   </Text>
+                  <Text style={[styles.cell, styles.colService]}>
+                    {ticket.service_performed
+                      ? ticket.service_performed.length > 100
+                        ? ticket.service_performed.substring(0, 100) + "..."
+                        : ticket.service_performed
+                      : "—"}
+                  </Text>
                 </View>
               ))}
 
@@ -268,6 +282,7 @@ export function TicketsReportPDF({
                   {formatHours(totalHours)}
                 </Text>
                 <Text style={[styles.cell, styles.colDescription]}></Text>
+                <Text style={[styles.cell, styles.colService]}></Text>
               </View>
             </View>
           ) : (
