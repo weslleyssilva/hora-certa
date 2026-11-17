@@ -103,13 +103,17 @@ export function AccessMatrix({ users, directories, permissions, scopes, clientNa
   };
 
   const toggle = (values: string[], id: string, setter: (next: string[]) => void) => setter(values.includes(id) ? values.filter((value) => value !== id) : [...values, id]);
-  const batchChanges = selectedUsers.flatMap((userId) => selectedDirectories.map((directoryId) => ({
-    access_user_id: userId,
-    directory_id: directoryId,
-    ...applyAccessLevel(batchLevel),
-    scope_paths: scopePaths(batchScopeText),
-    scope_notes: batchScopeNotes.trim() || null,
-  })));
+  const batchChanges = selectedUsers.flatMap((userId) => selectedDirectories.map((directoryId) => {
+    const preset = applyAccessLevel(batchLevel);
+    return {
+      access_user_id: userId,
+      directory_id: directoryId,
+      read_status: preset.read,
+      write_status: preset.write,
+      scope_paths: scopePaths(batchScopeText),
+      scope_notes: batchScopeNotes.trim() || null,
+    };
+  }));
   const openBatchConfirmation = () => {
     if (!selectedUsers.length || !selectedDirectories.length) return toast({ title: "Selecione colaboradores e diretórios", variant: "destructive" });
     const sample = batchChanges[0];

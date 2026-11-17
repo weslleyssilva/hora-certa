@@ -34,7 +34,7 @@ export function AccessOverview({ users, directories, permissions }: {
   }, [activePermissions]);
   const directoryRanking = activeDirectories.map((directory) => ({
     name: directory.name,
-    value: activePermissions.filter((permission) => permission.directory_id === directory.id && hasDirectoryAccess(permission.read_status, permission.write_status)).size,
+    value: activePermissions.filter((permission) => permission.directory_id === directory.id && hasDirectoryAccess(permission.read_status, permission.write_status)).length,
   })).sort((a, b) => b.value - a.value).slice(0, 8);
   const notes = directories.find((directory) => !directory.parent_id && directory.notes)?.notes;
 

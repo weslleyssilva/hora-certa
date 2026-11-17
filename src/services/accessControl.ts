@@ -1,5 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
-import type { Tables, TablesInsert, TablesUpdate } from "@/integrations/supabase/types";
+import type { Json, Tables, TablesInsert, TablesUpdate } from "@/integrations/supabase/types";
 import type { AccessPermissionStatus } from "@/lib/accessControl";
 
 export type AccessUser = Tables<"access_users">;
@@ -96,7 +96,7 @@ export async function savePermission(change: PermissionChange) {
 }
 
 export async function savePermissionsBatch(changes: PermissionChange[]) {
-  const { error } = await supabase.rpc("admin_batch_save_permissions", { p_changes: changes });
+  const { error } = await supabase.rpc("admin_batch_save_permissions", { p_changes: changes as unknown as Json });
   if (error) throw error;
 }
 
