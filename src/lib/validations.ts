@@ -134,6 +134,38 @@
    status: z.enum(["open", "in_progress", "completed"]),
  });
  
+ // === Access control schemas ===
+ export const accessUserSchema = z.object({
+   name: z.string().trim().min(1, "Nome é obrigatório").max(MAX_NAME),
+   department: z.string().trim().max(MAX_NAME).nullable(),
+   notes: z.string().trim().max(MAX_NOTES).nullable(),
+   active: z.boolean(),
+   user_id: z.string().uuid().nullable(),
+   is_quality_manager: z.boolean(),
+ });
+
+ export const accessDirectorySchema = z.object({
+   name: z.string().trim().min(1, "Nome do diretório é obrigatório").max(MAX_NAME),
+   parent_id: z.string().uuid().nullable(),
+   notes: z.string().trim().max(MAX_NOTES).nullable(),
+   active: z.boolean(),
+   is_quality_only: z.boolean(),
+ });
+
+ const accessPermissionStatusSchema = z.enum(["granted", "denied", "limited", "undefined"]);
+ export const accessPermissionSchema = z.object({
+   read_status: accessPermissionStatusSchema,
+   write_status: accessPermissionStatusSchema,
+   scope_paths: z.array(z.string().trim().min(1).max(1000)).max(100),
+   scope_notes: z.string().trim().max(MAX_NOTES).nullable(),
+ }).refine(
+   (data) => data.write_status !== "granted" || ["granted", "limited"].includes(data.read_status),
+   { message: "Alteração exige permissão de leitura", path: ["read_status"] }
+ ).refine(
+   (data) => (![data.read_status, data.write_status].includes("limited")) || data.scope_paths.length > 0,
+   { message: "Informe ao menos uma pasta ou subpasta para acesso limitado", path: ["scope_paths"] }
+ );
+
  // Helper to get first error message
  export function getValidationError(result: z.SafeParseReturnType<any, any>): string | null {
    if (result.success) return null;

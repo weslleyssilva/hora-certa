@@ -1,0 +1,27 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1794936434858,
+      "tag": "0000_create_access_control_module",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1794936512374,
+      "tag": "0001_enable_access_permission_audit",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1794936553772,
+      "tag": "0002_add_client_to_access_audit_logs",
+      "breakpoints": true
+    }
+  ]
+}
